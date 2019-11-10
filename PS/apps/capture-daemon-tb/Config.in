@@ -1,0 +1,6 @@
+config BR2_PACKAGE_CAPTURE_DAEMON
+	bool "capture-daemon"
+	depends on BR2_PACKAGE_YAML_CPP
+	default y
+	help
+	  CAPTURE-DAEMON component

@@ -1,0 +1,1 @@
+add_library(tcp_connection_o OBJECT tcp_connection.cpp tcp_connection_creator.cpp)

@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# Start the startup script....
+#
+FTPUSER=admin
+PASSWORD=636
+
+mkdir /home/
+mkdir /home/$FTPUSER
+mkdir /home/ftp/
+
+adduser -h /home/$FTPUSER -s /bin/sh -D $FTPUSER
+echo "$FTPUSER:$PASSWORD" | chpasswd
+adduser -h /home/ftp -D ftp ftp
+
+case "$1" in
+	start)
+		mkdir -p /mnt/configs
+		mount -t jffs2 /dev/mtdblock4 /mnt/configs
+		mkdir -p /home/ftp/configs
+		mount --bind /mnt/configs /home/ftp/configs
+		mkdir -p /home/$FTPUSER/configs
+		mount --bind /mnt/configs /home/$FTPUSER/configs
+		;;
+
+	stop)
+		umount /mnt/configs
+		umount /dev/mtdblock4
+		;;
+
+	restart|reload)
+		"$0" stop
+		"$0" start
+		;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac
+
+exit $?

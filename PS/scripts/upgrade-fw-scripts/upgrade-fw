@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Upgrade fimware....
+#
+
+BOOT="/home/ftp/BOOT.bin"
+KERNEL="/home/ftp/uImage"
+DEVICETREE="/home/ftp/devicetree.dtb"
+ROOTFS="/home/ftp/uramdisk.image.gz"
+
+if [ -f $BOOT ]; then
+	echo "BOOT.bin writing..."
+	flashcp -v $BOOT /dev/mtd0;
+fi
+
+if [ -f $KERNEL ]; then
+	echo "uImage writing..."
+	flashcp -v $KERNEL /dev/mtd1;
+fi
+
+if [ -f $DEVICETREE ]; then
+	echo "devicetree.dtb writing..."
+	flashcp -v $DEVICETREE /dev/mtd2;
+fi
+
+if [ -f $ROOTFS ]; then
+	echo "uramdisk.image.gz writing..."
+	flashcp -v $ROOTFS /dev/mtd3;
+fi
+
+exit $?

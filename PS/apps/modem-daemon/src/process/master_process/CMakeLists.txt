@@ -1,0 +1,1 @@
+add_library(master_process_o OBJECT master_process.cpp master_process_creator.cpp)

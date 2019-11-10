@@ -1,0 +1,5 @@
+config BR2_PACKAGE_STARTUP
+	bool "startup-scripts"
+	default y
+	help
+	  STARTUP component

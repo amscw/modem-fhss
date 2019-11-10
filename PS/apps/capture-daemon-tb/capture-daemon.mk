@@ -1,0 +1,28 @@
+################################################################################
+#
+# CAPTURE DAEMON
+#
+################################################################################
+
+CAPTURE_DAEMON_VERSION = 1.0
+CAPTURE_DAEMON_SITE = /home/alex/projects/modem-fhss/apps/capture-daemon
+CAPTURE_DAEMON_SITE_METHOD = local
+CAPTURE_DAEMON_INSTALL_TARGET = YES
+
+CAPTURE_DAEMON_SCRIPT = capture-daemon
+CAPTURE_DAEMON_SCRIPT_SRC_DIR = scripts/
+CAPTURE_DAEMON_SCRIPT_DST_DIR = /root/
+
+CAPTURE_DAEMON_CONFIG = config.yaml
+CAPTURE_DAEMON_CONFIG_SRC_DIR = settings/
+CAPTURE_DAEMON_CONFIG_DST_DIR = /etc/capture-daemon/
+
+define CAPTURE_DAEMON_INSTALL_TARGET_CMDS
+	$(INSTALL) -D -m 0755 $(@D)/bin/capture-daemon $(TARGET_DIR)/bin
+	cp -rf $(CAPTURE_DAEMON_SITE)/$(CAPTURE_DAEMON_SCRIPT_SRC_DIR)/$(CAPTURE_DAEMON_SCRIPT) $(TARGET_DIR)/$(CAPTURE_DAEMON_SCRIPT_DST_DIR)/$(CAPTURE_DAEMON_SCRIPT)
+	chmod +x $(TARGET_DIR)/$(CAPTURE_DAEMON_SCRIPT_DST_DIR)/$(CAPTURE_DAEMON_SCRIPT)
+	mkdir -p $(TARGET_DIR)/$(CAPTURE_DAEMON_CONFIG_DST_DIR)
+	cp -rf $(CAPTURE_DAEMON_SITE)/$(CAPTURE_DAEMON_CONFIG_SRC_DIR)/$(CAPTURE_DAEMON_CONFIG) $(TARGET_DIR)/$(CAPTURE_DAEMON_CONFIG_DST_DIR)/$(CAPTURE_DAEMON_CONFIG)
+endef
+
+$(eval $(cmake-package))

@@ -1,0 +1,3 @@
+add_subdirectory(daemon_process)
+add_subdirectory(master_process)
+add_subdirectory(worker_process)

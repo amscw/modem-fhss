@@ -1,0 +1,1 @@
+add_library(tcp_server_async_o OBJECT tcp_server_async.cpp)

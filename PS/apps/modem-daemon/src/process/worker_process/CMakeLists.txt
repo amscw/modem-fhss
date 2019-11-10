@@ -1,0 +1,1 @@
+add_library(worker_process_o OBJECT worker_process.cpp worker_process_creator.cpp)

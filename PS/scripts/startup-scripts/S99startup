@@ -1,0 +1,69 @@
+#!/bin/sh
+#
+# Start the startup script....
+#
+
+source /etc/network/system.conf
+
+case "$1" in
+	start)
+		# Starting startup script...
+
+		# Network configuration
+		ifconfig eth0 down
+		ifconfig eth0 hw ether $HWADDR
+		ifconfig eth0 inet $IPADDR
+		ifconfig eth0 up
+
+		# FTP up
+		/usr/sbin/pure-ftpd /etc/pure-ftpd.conf
+		
+		# Loading modules...
+		#REGS=$(regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log)
+		#REGCOUNT=$(echo $REGS | grep -o ";" | wc -l)
+		modprobe mfhssdrv #regmap="$REGS" regcount=$REGCOUNT
+		regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log
+
+		# Loading modules...
+		modprobe modem-capture
+
+		# Starting ad9361...
+		ad9361
+
+		# Starting capture-daemon...
+		sh /root/modem-daemon start
+
+		# Starting capture-daemon...
+		sh /root/capture-daemon start
+		
+		# modem startup sequence
+		if [ -f /mnt/configs/startup-sequence.sh ]; then
+			sh /mnt/configs/startup-sequence.sh
+		fi
+		;;
+
+	stop)
+		# Stoppped capture-daemon...
+		sh /root/capture-daemon stop
+
+		# Stoppped capture-daemon...
+		sh /root/modem-daemon stop
+
+		# Removing modules...
+		rmmod modem-capture
+
+		# Removing modules...
+		rmmod modem-fhss
+		;;
+
+	restart|reload)
+		"$0" stop
+		"$0" start
+		;;
+
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac
+
+exit $?

@@ -1,0 +1,30 @@
+#
+#  Описание: основной конфигурационный файл
+#
+
+#--- Основыне настройки сервера ---
+Server:
+    Name: 'capture-daemon'                              #имя сервера
+
+    #--- Настройка сетевого соединения ---
+    Connection:
+        ip_version: 4                                   #версия ip аддреса (ip_v4 или ip_v6)
+        ip_address: '0.0.0.0'                           #ip адресс
+        port: 9617                                      #порт
+
+    #--- Основные директрии сервера ---
+    Directories:
+        #--- Настройки лог файлов ---
+        Logs:
+            error_log: '/var/log/capture-daemon/error_log'      #директрия до файла ошибок
+            access_log: '/var/log/capture-daemon/access_log'    #директрия для файла выолненных действий
+
+        #--- Настройки pid файла ---
+        Pid:
+            pid_path: '/var/run/capture-daemon.pid'             #директрия до pid файла
+
+#--- Capture ---
+Capture:
+    capture_devname: '/dev/modem-capture'                       #название устройства
+
+    capture_header: 0xAB                                        #заголовок

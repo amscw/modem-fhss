@@ -1,0 +1,2 @@
+add_subdirectory(master_thread)
+add_subdirectory(worker_thread)

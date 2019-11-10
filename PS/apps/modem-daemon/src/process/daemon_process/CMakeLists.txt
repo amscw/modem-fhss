@@ -1,0 +1,1 @@
+add_library(daemon_process_o OBJECT daemon_process.cpp daemon_process_creator.cpp)

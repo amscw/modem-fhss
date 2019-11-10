@@ -1,0 +1,9 @@
+config BR2_PACKAGE_MODEM_CAPTURE_MOD
+	bool "modem-capture-module"
+	default y
+	depends on BR2_LINUX_KERNEL
+	help
+	  Kernel module to support anp device.
+
+comment "MODEM_CAPTURE module requires a linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

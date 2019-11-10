@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Start the startup script....
+#
+
+AD9361_CONF_SRC="/mnt/configs/ad9361/config.yaml"
+AD9361_FIR_SRC="/mnt/configs/ad9361/ad9361_fir.conf"
+NET_CONF_SRC="/mnt/configs/network/system.conf"
+FTP_CONF_SRC="/mnt/configs/ftp/pure-ftpd.conf"
+REGMAP_SRC="/mnt/configs/axi_pkg.vhd"
+CONFIG_SRC="/mnt/configs/config.yaml"
+
+AD9361_CONF_DST="/etc/ad9361/config.yaml"
+AD9361_FIR_DST="/etc/ad9361/ad9361_fir.conf"
+NET_CONF_DST="/etc/network/system.conf"
+FTP_CONF_DST="/etc/pure-ftpd.conf"
+REGMAP_DST="/etc/axi_pkg.vhd"
+CONFIG_DST="/etc/modem-daemon/config.yaml"
+
+if [ -f $AD9361_CONF_SRC ]; then
+	cp -rf $AD9361_CONF_SRC $AD9361_CONF_DST;
+fi
+
+if [ -f $AD9361_FIR_SRC ]; then
+	cp -rf $AD9361_FIR_SRC $AD9361_FIR_DST;
+fi
+
+if [ -f $NET_CONF_SRC ]; then
+	cp -rf $NET_CONF_SRC $NET_CONF_DST;
+fi
+
+if [ -f $FTP_CONF_SRC ]; then
+	cp -rf $FTP_CONF_SRC $FTP_CONF_DST;
+fi
+
+if [ -f $CONFIG_SRC ]; then
+	cp -rf $CONFIG_SRC $CONFIG_DST;
+fi
+
+if [ -f $REGMAP_SRC ]; then
+	echo "copy $REGMAP_SRC to $REGMAP_DST" >> /var/log/startup.log
+	cp -rf $REGMAP_SRC $REGMAP_DST;
+else 
+	echo "not found: $REGMAP_SRC" >> /var/log/startup.log
+fi
+
+exit $?

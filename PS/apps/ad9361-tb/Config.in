@@ -1,0 +1,6 @@
+config BR2_PACKAGE_AD9361
+	bool "ad9361"
+	depends on BR2_PACKAGE_LIBYAML
+	default y
+	help
+	  AD9361 component

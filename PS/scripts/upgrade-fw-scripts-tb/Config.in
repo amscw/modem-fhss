@@ -1,0 +1,5 @@
+config BR2_PACKAGE_UPGRADE_FW
+	bool "upgrade-fw"
+	default y
+	help
+	  UPGRADE-FIRMWARE component
