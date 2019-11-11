@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING! need: u-boot in $UBOOT_DIR
 
-UBOOT_DIR=/opt/build/modem-rs-fhss/u-boot-xlnx
+UBOOT_DIR=/home/alex-m/build/u-boot-xlnx
 
 if ! [[ -d $UBOOT_DIR ]]; then
 	echo "no such directory: $UBOOT_DIR"
