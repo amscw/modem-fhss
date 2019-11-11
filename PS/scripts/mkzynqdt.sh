@@ -1,6 +1,6 @@
 #!/bin/bash
-PROJECT_DIR=/home/user/projects
-DT_XLNX_DIR=/opt/build/modem-rs-fhss/device-tree-xlnx
+PROJECT_DIR=/home/alex-m/projects/
+DT_XLNX_DIR=/home/alex-m/build/device-tree-xlnx/
 
 if ! [[ $1 ]]; then 
 	echo "Usage: $0 dts|dtb"
