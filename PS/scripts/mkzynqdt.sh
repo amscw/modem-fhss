@@ -1,6 +1,9 @@
 #!/bin/bash
 PROJECT_DIR=/home/alex-m/projects/
 DT_XLNX_DIR=/home/alex-m/build/device-tree-xlnx/
+VIVADO_DIR=/home/alex-m/vivado/Vivado/2016.2/
+
+source $VIVADO_DIR/settings64.sh
 
 if ! [[ $1 ]]; then 
 	echo "Usage: $0 dts|dtb"
