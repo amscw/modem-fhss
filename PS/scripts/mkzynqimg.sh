@@ -6,8 +6,8 @@
 # devicetree.dtb must present in hw/dt/
 # linux kernel and rootfs were built
 
-BUILDROOT_DIR=/opt/build/modem-rs-fhss/buildroot
-SDK_DIR=/opt/Xilinx/SDK/2016.2/bin
+BUILDROOT_DIR=/home/alex-m/build/buildroot
+SDK_DIR=/home/alex-m/vivado/SDK/2016.2/bin
 
 if ! [[ -d $BUILDROOT_DIR ]]; then
 	echo "no such directory: $BUILDROOT_DIR"
