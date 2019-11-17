@@ -5,7 +5,7 @@
 ################################################################################
 
 NETWORK_CONFIG_VERSION = 1.0
-NETWORK_CONFIG_SITE = /home/alex/projects/modem-fhss/configs/network-config
+NETWORK_CONFIG_SITE = /home/alex-m/projects/modem-fhss/PS/configs/network-config
 NETWORK_CONFIG_SITE_METHOD = local
 NETWORK_CONFIG_INSTALL_STAGING = YES
 NETWORK_CONFIG_INSTALL_TARGET = YES

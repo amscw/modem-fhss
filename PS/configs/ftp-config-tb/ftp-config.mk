@@ -5,7 +5,7 @@
 ################################################################################
 
 FTP_CONFIG_VERSION = 1.0
-FTP_CONFIG_SITE = /home/alex/projects/modem-fhss/configs/ftp-config
+FTP_CONFIG_SITE = /home/alex-m/projects/modem-fhss/PS/configs/ftp-config
 FTP_CONFIG_SITE_METHOD = local
 FTP_CONFIG_INSTALL_STAGING = NO
 FTP_CONFIG_INSTALL_TARGET = YES
