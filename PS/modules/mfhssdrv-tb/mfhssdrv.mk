@@ -5,7 +5,7 @@
 ################################################################################
 
 MFHSSDRV_VERSION = 1.0
-MFHSSDRV_SITE = /home/alex/projects/modem-fhss/modules/mfhssdrv
+MFHSSDRV_SITE = /home/alex-m/projects/modem-fhss/PS/modules/mfhssdrv
 MFHSSDRV_SITE_METHOD = local
 MFHSSDRV_DEPENDENCIES = linux
 

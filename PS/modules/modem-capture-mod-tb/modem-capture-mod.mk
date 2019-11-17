@@ -5,7 +5,7 @@
 ################################################################################
 
 MODEM_CAPTURE_MOD_VERSION = 1.0
-MODEM_CAPTURE_MOD_SITE = /home/alex/projects/modem-fhss/modules/modem-capture-mod
+MODEM_CAPTURE_MOD_SITE = /home/alex-m/projects/modem-fhss/PS/modules/modem-capture-mod
 MODEM_CAPTURE_MOD_SITE_METHOD = local
 MODEM_CAPTURE_MOD_DEPENDENCIES = linux
 
