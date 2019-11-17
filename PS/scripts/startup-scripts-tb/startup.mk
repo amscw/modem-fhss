@@ -5,7 +5,7 @@
 ################################################################################
 
 STARTUP_SCRIPTS_VERSION = 1.0
-STARTUP_SCRIPTS_SITE = /home/alex/projects/modem-fhss/scripts/startup-scripts
+STARTUP_SCRIPTS_SITE = /home/alex-m/projects/modem-fhss/PS/scripts/startup-scripts
 STARTUP_SCRIPTS_SITE_METHOD = local
 STARTUP_SCRIPTS_INSTALL_STAGING = YES
 STARTUP_SCRIPTS_INSTALL_TARGET = YES

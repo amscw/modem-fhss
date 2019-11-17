@@ -5,7 +5,7 @@
 ################################################################################
 
 UPGRADE_FW_SCRIPTS_VERSION = 1.0
-UPGRADE_FW_SCRIPTS_SITE = /home/alex/projects/modem-fhss/scripts/upgrade-fw-scripts
+UPGRADE_FW_SCRIPTS_SITE = /home/alex-m/projects/modem-fhss/PS/scripts/upgrade-fw-scripts
 UPGRADE_FW_SCRIPTS_SITE_METHOD = local
 UPGRADE_FW_SCRIPTS_INSTALL_STAGING = YES
 UPGRADE_FW_SCRIPTS_INSTALL_TARGET = YES
