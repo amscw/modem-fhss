@@ -5,7 +5,7 @@
 ################################################################################
 
 AD9361_VERSION = 1.0
-AD9361_SITE = /home/alex/projects/modem-fhss/apps/ad9361
+AD9361_SITE = /home/alex-m/projects/modem-fhss/PS/apps/ad9361
 AD9361_SITE_METHOD = local
 AD9361_INSTALL_STAGING = YES
 AD9361_INSTALL_TARGET = YES

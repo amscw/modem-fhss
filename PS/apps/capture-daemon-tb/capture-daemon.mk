@@ -5,7 +5,7 @@
 ################################################################################
 
 CAPTURE_DAEMON_VERSION = 1.0
-CAPTURE_DAEMON_SITE = /home/alex/projects/modem-fhss/apps/capture-daemon
+CAPTURE_DAEMON_SITE = /home/alex-m/projects/modem-fhss/PS/apps/capture-daemon
 CAPTURE_DAEMON_SITE_METHOD = local
 CAPTURE_DAEMON_INSTALL_TARGET = YES
 
