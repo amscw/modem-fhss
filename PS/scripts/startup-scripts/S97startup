@@ -3,7 +3,7 @@
 # Start the startup script....
 #
 FTPUSER=admin
-PASSWORD=636
+PASSWORD=admin
 
 mkdir /home/
 mkdir /home/$FTPUSER
