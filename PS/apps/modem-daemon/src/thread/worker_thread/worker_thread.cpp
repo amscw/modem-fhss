@@ -44,7 +44,7 @@ void worker_thread::listen_modem() noexcept
 	buf.reserve(1024);
 	long timeElapsed; 
 
-	if ((fd = open("/dev/mfhssdrv", O_RDONLY)) != -1)
+	if ((fd = open("/dev/mfhss0", O_RDONLY)) != -1)
 	{
 		bytes = read(fd, buf.data(), buf.capacity());
 		if (bytes > 0)
