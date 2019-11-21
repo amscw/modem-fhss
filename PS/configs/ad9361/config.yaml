@@ -50,7 +50,7 @@ RF Port Control:
     tx_rf_port_input_select: 0
 
 TX Attenuation Control:
-    tx_attenuation_mdB: 10
+    tx_attenuation_mdB: 22000
     update_tx_gain_in_alert_enable: 0
 
 Reference Clock Control:
@@ -73,8 +73,8 @@ Gain Control:
     gc_max_dig_gain: 15
 
 Gain MGC Control:
-    mgc_dec_gain_step: 2
-    mgc_inc_gain_step: 2
+    mgc_dec_gain_step: 1
+    mgc_inc_gain_step: 1
     mgc_rx1_ctrl_inp_enable: 1
     mgc_rx2_ctrl_inp_enable: 0
     mgc_split_table_ctrl_inp_gain_mode: 0
@@ -85,8 +85,8 @@ Gain AGC Control:
     agc_adc_lmt_small_overload_prevent_gain_inc_enable: 0
     agc_adc_small_overload_exceed_counter: 10
     agc_dig_gain_step_size: 4
-    agc_dig_saturation_exceed_counter: 3
-    agc_gain_update_interval_us: 1000
+    agc_dig_saturation_exceed_counter: 15
+    agc_gain_update_interval_us: 500
     agc_immed_gain_change_if_large_adc_overload_enable: 0
     agc_immed_gain_change_if_large_lmt_overload_enable: 0
     agc_inner_thresh_high: 10
@@ -175,7 +175,7 @@ Temperature Sensor Control:
 
 Control Out Setup:
     ctrl_outs_enable_mask: 0xFF
-    ctrl_outs_index: 22
+    ctrl_outs_index: 0x16
 
 External LNA Control:
     elna_settling_delay_ns: 0

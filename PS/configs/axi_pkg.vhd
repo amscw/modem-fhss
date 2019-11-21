@@ -17,7 +17,7 @@ use ieee.math_real.all;
 package Axi_pkg is
 	-- Количество регистров AXI
 	constant REG_CNT           : integer := 256;
-	constant OPT_MEM_ADDR_BITS : integer := integer(ceil(log2(real(REG_CNT*4))));
+	constant OPT_MEM_ADDR_BITS : integer := integer(ceil(log2(real(REG_CNT * 4))));
 
 	-- регистр включения/выключения заворотки MLIP
 	constant ADDR_REG_MLIP_LOOP                  : integer := 0;
@@ -70,11 +70,24 @@ package Axi_pkg is
 	constant ADDR_REG_DLINK_REQPACK_TR_SIZE      : integer := 25;
 	-- Размер пакета Подтверждения
 	constant ADDR_REG_DLINK_ACKPACK_TR_SIZE      : integer := 26;
-	-- Размер пакета Данных
+	-- Размер пакета тренировочной последователдьности
 	constant ADDR_REG_DLINK_DATAPACK_TR_SIZE     : integer := 27;
-	-- Размер пакета Данных
+	-- для синхронизации с кодером и САП размеры пакетов рассчитываются по формуле:
+	--	1) для ADDR_REG_DLINK_CODER_MOD
+	--	   when BPSK_1_2  => th := 192;     
+	--	   when QPSK_1_2  => th := 384;    
+	--	   when QPSK_3_4  => th := 384;
+	--	   when QAM16_1_2 => th := 768;    
+	--	   when QAM16_3_4 => th := 768;
+	--	   when QAM64_2_3 => th := 1152;
+	--	   when QAM64_3_4 => th := 1152;
+	--	2) DATA_SIZE = th*(2+DLINK_CODER_NUMBW)
+	--	3) Размер пакета должен быть кратным (DATA_SIZE)/2
+	-- Например BPSK_1_2, DLINK_CODER_NUMBW = 0, Размер = 768 символов
+	-- Размер пакета Данных Master-> Slave
 	constant ADDR_REG_DLINK_DATAPACK_MDATA_SIZE  : integer := 28;
-	-- Размер пакета Данных
+	-- Размер пакета Данных Master -> Slave (для симплекса и дуплекса должен быть равен 
+	-- ADDR_REG_DLINK_DATAPACK_MDATA_SIZE)
 	constant ADDR_REG_DLINK_DATAPACK_SDATA_SIZE  : integer := 29;
 	-- TH для поиска преамбулы <= LEN_PREAMBLE
 	constant ADDR_REG_DLINK_NMATCH               : integer := 30;
@@ -173,15 +186,46 @@ package Axi_pkg is
 	constant ADDR_REG_DLINK_EN_LOCK_DETECT       : integer := 77;
 	-- Регистр состояния связи Dlink
 	constant ADDR_REG_DLINK_LINK                 : integer := 78;
+	-- Регистр кода модуляции
+	--		BPSK_1_2  => "000"
+	--		QPSK_1_2  => "001"
+	--		QPSK_3_4  => "010"
+	--		QAM16_1_2 => "011"
+	--		QAM16_3_4 => "100"
+	--		QAM64_2_3 => "101"
+	--		QAM64_3_4 => "110"	
+	constant ADDR_REG_DLINK_CODER_MOD            : integer := 79;
+	-- Количество промежуточных пакетов между first и last (0 - ...)
+	constant ADDR_REG_DLINK_CODER_NUMBW          : integer := 80;
+	-- Включение заворотки кодера
+	constant ADDR_REG_DLINK_CODER_LOOP           : integer := 81;
+	-- Включение/отключение кодера
+	constant ADDR_REG_DLINK_CODER_EN             : integer := 82;
+	-- SEED для Scrambler (IUC & BSID & FRAME_NUMBER)
+	constant ADDR_REG_DLINK_CODER_SEED           : integer := 83;
 	-- инкремент/декремент усиления
-	constant ADDR_REG_PHY_IC_GAIN_UPDATE         : integer := 79;
+	constant ADDR_REG_PHY_IC_GAIN_UPDATE         : integer := 84;
 	-- Ожидание наступления связи после lock_det в мс
-	constant ADDR_REG_WATCH_WAIT_MAX             : integer := 80;
+	constant ADDR_REG_WATCH_WAIT_MAX             : integer := 85;
 	-- Заморозка NCO в мс
-	constant ADDR_REG_WATCH_FRZ_MAX              : integer := 81;
+	constant ADDR_REG_WATCH_FRZ_MAX              : integer := 86;
 	-- Включение watchdog
-	constant ADDR_REG_WATCH_EN                   : integer := 82;
+	constant ADDR_REG_WATCH_EN                   : integer := 87;
 	-- Счетчик срабатываний сторожевого пса
-	constant ADDR_REG_WATCH_DOG_WORK             : integer := 83;
+	constant ADDR_REG_WATCH_DOG_WORK             : integer := 88;
+	-- Включение SAP уровня
+	constant ADDR_REG_SAP_EN                     : integer := 89;
+	-- Заворотка SAP уровня
+	constant ADDR_REG_SAP_LOOP                   : integer := 90;
+	-- ключ SAP 
+	constant ADDR_REG_SAP_KEY_SAP                : integer := 91;
+	-- SAP_KEY_INTR := 0x01234567;
+	constant ADDR_REG_SAP_KEY_INTR               : integer := 92;
+	-- Размер пакета данных
+	constant ADDR_REG_SAP_SIZE_PACK              : integer := 93;
+	-- Размер преамбулы (до 10)
+	constant ADDR_REG_SAP_SIZE_PR                : integer := 94;
+	-- Включение берометра DLINK
+	constant ADDR_REG_DLINK_BER_EN               : integer := 95;
 
 end package Axi_pkg;
