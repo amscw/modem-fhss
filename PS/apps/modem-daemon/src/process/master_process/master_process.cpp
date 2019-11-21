@@ -38,7 +38,6 @@ void master_process::start_process() noexcept
 	std::string ip_addr;
 	std::string server_type;
 
-	// FIXME: на кой черт здесь блок try если get_config() помечен как noexcept ?!
 	try
 	{
 		server_type = server_config::get_instance()->get_config()->type_;

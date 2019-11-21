@@ -9,12 +9,9 @@
 #include <unistd.h>
 #include <functional>
 
-#include "tracers.h"
-
 void master_thread::run(cancellation_token& token, std::unique_ptr<threadsafe_queue<std::unique_ptr<connection>>> &queue,
   std::unique_ptr<endpoint_ipv4> &ep) noexcept
 {
-	std::ostringstream oss;
 	std::unique_ptr<tcp_connection_creator> tcp_create = nullptr;
 	try
 	{

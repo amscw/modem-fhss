@@ -53,7 +53,6 @@ void server_config::load_config_file(const std::string& file_name)
 		get_access_log();
 		get_error_log();
 		get_pidfile();
-		get_packet_size();
 	}
 	catch(YAML::ParserException &ex)
 	{
@@ -157,18 +156,6 @@ void server_config::get_pidfile()
 		cfg_->directories_.pid_.pid_path_ = config_["Server"]["Directories"]["Pid"]["pid_path"].as<std::string>();
 	}
 	catch(YAML::ParserException& ex)
-	{
-		throw ex;
-	}
-}
-
-void server_config::get_packet_size()
-{
-	try
-	{
-		cfg_->modem_.packet_size_ = config_["Server"]["Modem"]["packet_size"].as<std::uint32_t>();
-	}
-	catch (YAML::ParserException &ex)
 	{
 		throw ex;
 	}

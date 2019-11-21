@@ -41,7 +41,7 @@ public:
 	/**
 	 * @brief полчение указателя на структуру c конфигом
 	 *
-	 * @return указатель на структуру
+	 * @return ссылку на структуру
 	 */
 	const config_struct* get_config() noexcept;
 
@@ -104,8 +104,6 @@ private:
 	 * @throw YAML::ParserException
 	 */
 	void get_pidfile();
-
-	void get_packet_size();
 
 private:
 	server_config() noexcept;

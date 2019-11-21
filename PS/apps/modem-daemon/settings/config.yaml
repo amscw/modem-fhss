@@ -24,7 +24,3 @@ Server:
         #--- Настройки pid файла ---
         Pid:
             pid_path: '/var/run/modem-daemon.pid'             #директрия до pid файла
-
-
-    Modem:
-      packet_size: 128 # 0-исп. фактическую длину

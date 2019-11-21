@@ -17,11 +17,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "tracers.h"
 #include "modem-sender.h"
 #include "modem-receiver.h"
-#include "tracers.h"
 
-// #define DEBUG_MODEM_SERVER
+#define DEBUG_MODEM_SERVER
 
 class cancellation_token;
 
@@ -40,7 +40,7 @@ class worker_thread
 	};
 
 	const long MAX_WAIT_TIME = 5000;
-	const long MAX_WATE_TIME_RX = 1000;
+	const long MAX_WAIT_TIME_RX = 1000;
 	const int MAX_PACKET_SIZE = 107;
 
 public:
@@ -65,40 +65,22 @@ public:
 		fd_port1_(-1), fd_port2_(-1),
 		m_bModEnabled(false)
 		{
-			int fd, bytes;
-			std::ostringstream oss; 
+			int fd, bytes; 
+			std::ostringstream oss;
 
 			if ((fd = open("/sys/mfhssdrv-registers/m_en_mod", O_RDONLY)) != -1)
 			{
 				std::unique_ptr<char[]> ubuff(new char[32]);
 				memset (ubuff.get(), 0, 32);
 				bytes = read(fd, ubuff.get(), 32);
-				close(fd);
+				close (fd);
 				std::string str(ubuff.get());
 				std::istringstream(str) >> m_bModEnabled;
-				oss << "modem is " << (m_bModEnabled ? "transmitter" : "receiver");
+				oss << "modem is " << (m_bModEnabled ? "transmitter" : "receiver"); 
 				LOG_STREAM(oss);
 			}
 		};
 
-	// отдельный конструктор для указания размера пакета
-	// TODO: в принципе здесь можно использовать делегирующий конструктор, чтобы не дублировать списки инициализации членов класса	
-	worker_thread(uint32_t packet_size) : data_ready_(std::make_unique<event<void>>()),
-		connection_delete_ready_(std::make_unique<event<int>>()),
-		buffer_(std::vector<byte>(MSG_LENGTH)),
-		client_block_size_(0),
-		modem_block_size_(0),
-		select_connection_(std::make_unique<selector>()),
-		modem_conf_(std::make_unique<modem_conf>()),
-		m_nTimeoutOp(0), m_nTimeoutRx(0),
-		fd_port1_(-1), fd_port2_(-1),
-		m_bModEnabled(false),
-		packet_size_(packet_size)
-	{
-		std::ostringstream oss;
-		oss << "packet_size = " << packet_size;
-		LOG_STREAM(oss);
-	};
 	~worker_thread() = default;
 
 	/**
@@ -174,9 +156,9 @@ private:
 	std::unique_ptr<modem_conf> modem_conf_;
 
 	long m_nTimeoutOp, m_nTimeoutRx;
+
 	int fd_port1_, fd_port2_;
-	bool m_bModEnabled; 
-	uint32_t packet_size_;
+	bool m_bModEnabled;
 };
 
 #endif //_WORKER_THREAD_H_

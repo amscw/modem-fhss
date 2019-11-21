@@ -4,7 +4,6 @@
 #include "tcp_server_async.h"
 #include "threadsafe_queue.h"
 #include "worker_thread.h"
-#include "server_config.h"
 
 class tcp_server_async::impl
 {
@@ -47,7 +46,7 @@ void tcp_server_async::run(std::unique_ptr<endpoint_ipv4>& ep) noexcept
 	  std::ref(pimpl_->master_thread_), std::placeholders::_1, std::ref(pimpl_->queue_), std::ref(ep)));
 
 	// Запуск worker_thread
-	pimpl_->worker_thread_ = std::make_unique<worker_thread>(server_config::get_instance()->get_config()->modem_.packet_size_);
+	pimpl_->worker_thread_ = std::make_unique<worker_thread>();
 	pimpl_->worker_thread_creator_ = std::make_unique<raii_thread>(std::bind(&worker_thread::run,
 	std::ref(pimpl_->worker_thread_), std::placeholders::_1, std::ref(pimpl_->queue_)));
 

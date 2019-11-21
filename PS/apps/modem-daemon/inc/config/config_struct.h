@@ -44,14 +44,8 @@ struct config_struct
 		server_pid pid_;
 	};
 
-	struct modem
-	{
-		std::uint32_t packet_size_;
-	};
-
 	server_connection connection_;
 	server_directories directories_;
-	modem modem_;
 };
 
 #endif //_CONFIG_STRUCT_H_

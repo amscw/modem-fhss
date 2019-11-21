@@ -2,7 +2,6 @@
 #include "selector.h"
 #include "worker_thread.h"
 
-
 #include <stdexcept>
 
 // data_ready_ - событие "поток готов принять и обработать данные"
@@ -16,7 +15,8 @@ void worker_thread::run(cancellation_token& token, std::unique_ptr<threadsafe_qu
 	int fd;
 	long timeElapsed;
 
-	data_ready_->connect(std::bind(&selector::wait_event, std::ref(select_connection_)));												// подписывает selector_connection_ на свое событие data_ready_
+	data_ready_->connect(std::bind(&selector::wait_event, std::ref(select_connection_)));
+	data_ready_->connect(std::bind(&worker_thread::write_modem, this));
 	data_ready_->connect(std::bind(&worker_thread::listen_modem, this));
 	
 	select_connection_->epoll_data_ready_->connect(std::bind(&worker_thread::data_receive, this, std::placeholders::_1)); 				// подписывается на событие селектора epoll_data_ready
@@ -27,69 +27,93 @@ void worker_thread::run(cancellation_token& token, std::unique_ptr<threadsafe_qu
 		while (!queue->is_empty())
 		{
 			std::unique_ptr<connection> tcp = std::move(queue->pop());
-			if (tcp->get_slave_port() == 4097)
-			{
-				fd_port1_ = tcp->get_slave_socket();
-				oss << "port1 connected over TCP";
-				LOG_STREAM(oss);
-			}
-			if (tcp->get_slave_port() == 4098)
-			{
-				fd_port2_ = tcp->get_slave_socket();
-				oss << "port2 connected over TCP";
-				LOG_STREAM(oss);
-			}
 			select_connection_->register_connect(std::move(tcp));
 		}
 		data_ready_->emit();	// select_connection_->wait_event(), далее будет вызван data_receive(), если событие имело место быть
 	}
 }
 
+
+// факт окончания приема индицируется по таймауту
 void worker_thread::listen_modem() noexcept
 {
 	std::ostringstream oss;
 	int fd;
 	ssize_t bytes;
-	std::unique_ptr<byte[]> pBuffer(new byte[MSG_LENGTH]);
+	std::vector<byte> buf;
+	buf.reserve(1024);
+	long timeElapsed; 
 
-	if ((fd = open("/dev/mfhss0", O_RDONLY)) != -1)
+	if ((fd = open("/dev/mfhssdrv", O_RDONLY)) != -1)
 	{
-		block_from_modem_.clear();
-		stopwatchStart(m_nTimeoutOp);
-		if ((bytes = read(fd, pBuffer.get(), MSG_LENGTH)) > 0)
+		bytes = read(fd, buf.data(), buf.capacity());
+		if (bytes > 0)
 		{
-			// забираем что прочитали
-			block_from_modem_.insert(block_from_modem_.end(), pBuffer.get(), pBuffer.get() + bytes);
-			
-			// отладка
-			#ifdef DEBUG_MODEM_SERVER
-			oss << "received from modem: " << bytes << " bytes, elapsed: " << stopwatchStop(m_nTimeoutOp) << "ms";
-			dump(block_from_modem_);
-			LOG_STREAM(oss); 
-			#endif // DEBUG_MODEM_SERVER
-			
-			// отправка в TCP
-			try
+			// перемещение данных в блок
+			block_from_modem_.reserve(block_from_modem_.size() + bytes);
+			block_from_modem_.insert(block_from_modem_.end(), buf.begin(), buf.begin() + bytes);
+			oss << "--read: " << block_from_modem_.size() << " bytes";
+			LOG_STREAM(oss);
+			stopwatchStart(m_nTimeoutOp);
+		} else if (bytes == 0 && block_from_modem_.size() > 0 &&  ( (timeElapsed = stopwatchStop(m_nTimeoutOp)) >= 2000 ) ) {
+			oss << "end of block, elapsed: " << timeElapsed << " ms";
+			LOG_STREAM(oss);
+			// больше не ждем, завершаем приём
+			if (block_from_modem_.size() < 3)
 			{
-				select_connection_->tcp(fd_port1_)->send_data(block_from_modem_);
-				select_connection_->tcp(fd_port2_)->send_data(block_from_modem_);
-			} catch (std::out_of_range) {
-				oss << "cannot transmit data from modem: uart not connected";
-				LOG_STREAM(oss);
+				// блок невалиден - маленький размер
+				oss << "error: block too small-" << block_from_modem_.size() << " bytes";
+			} else {
+				modem_block_size_ = block_from_modem_[0] << 8 | block_from_modem_[1];
+				if (modem_block_size_ == block_from_modem_.size())
+				{
+					// блок валиден, можно отдать клиенту
+					oss << "modem read complete (total: " <<  modem_block_size_ << " bytes)";
+					block_to_client_ = std::move(block_from_modem_);
+				} else {
+					// блок невалиден - несовпадение по размеру
+					oss << "error: received-" << block_from_modem_.size() << ", need-" << modem_block_size_ << " bytes";
+				}
+				block_from_modem_.clear();
+				modem_block_size_ = 0;		
 			}
-		}	
+			LOG_STREAM(oss);		
+		}
 		close(fd);		
 	}  
 }
 
-// сквозная передача в модем
+void worker_thread::write_modem() noexcept
+{
+	std::ostringstream oss;
+	int fd;
+	static ssize_t bytes = 0;
+	
+	if ((block_to_modem_.size() > 0) && ((fd = open ("/dev/mfhss0", O_WRONLY)) != -1))
+	{
+		bytes += write(fd, block_to_modem_.data() + bytes, block_to_modem_.size() - bytes);
+		if (bytes == block_to_modem_.size())
+		{
+			oss << "modem write complete (total: " << bytes << " bytes)";
+			// уничтожить блок
+			bytes = 0;
+			block_to_modem_.clear();
+			
+		} else oss << "--write: " << bytes << "/" << block_to_modem_.size() << " bytes";
+		LOG_STREAM(oss);
+		close (fd);
+	} 
+}
+
+// возможны ситуации:
+// была принята только часть блока
+// было принято несколько блоков
 void worker_thread::data_receive(std::unique_ptr<connection> &tcp) noexcept
 {
 	std::ostringstream oss;
 	std::int64_t recv_result;
-	int slave_socket = tcp->get_slave_socket(), fd;
-	size_t bytes;
-	long timeElapsed;
+	int slave_socket = tcp->get_slave_socket();
+	std::vector<byte> nextBlock;
 
 	// выгребаем все, что есть
 	// специальные возвращенные значения:
@@ -97,12 +121,7 @@ void worker_thread::data_receive(std::unique_ptr<connection> &tcp) noexcept
 	// -1 - данные кончились
 	while ((recv_result = tcp->receive_data(buffer_)) > 0 )
 	{
-		if (block_from_client_.size() == 0)
-		{
-			// Принимается следующая посылка
-			stopwatchStart(m_nTimeoutRx);
-		}
-		// block_from_client_.reserve(block_from_client_.size() + recv_result);
+		block_from_client_.reserve(block_from_client_.size() + recv_result);
 		block_from_client_.insert(block_from_client_.end(), buffer_.begin(), buffer_.begin() + recv_result);
 	}
 
@@ -116,37 +135,26 @@ void worker_thread::data_receive(std::unique_ptr<connection> &tcp) noexcept
 		return;
 	}
 
-	//!!! FOR DEBUG ONLY !!!
-	//dump(block_from_client_);
-	// block_from_client_.clear();
-	// return;
-
-	oss << "received: " << block_from_client_.size() << " bytes";
-	LOG_STREAM(oss);
-
-	// если модем является приемником - передавать ничего не можем!
-	// if (!m_bModEnabled)
-	// {
-	// 	block_from_client_.clear();
-	// 	return;
-	// } // теперь можем =)
-
-
-	if (block_from_client_.size() > packet_size_)
+	if (client_block_size_ == 0)
 	{
-		if ((fd = open ("/dev/mfhss0", O_WRONLY)) != -1)
+		if (block_from_client_.size() >= sizeof(uint16_t))
+			client_block_size_ = block_from_client_[0] << 8 | block_from_client_[1]; 
+		else return;
+	}
+
+	// обработать все принятые блоки
+	while (block_from_client_.size() >= client_block_size_)
+	{
+		std::copy(block_from_client_.begin(), block_from_client_.begin() + client_block_size_, std::back_inserter(nextBlock));
+		data_process(tcp, std::move(nextBlock));			
+		block_from_client_.erase(block_from_client_.begin(), block_from_client_.begin() + client_block_size_);
+		if (block_from_client_.size() >= sizeof(uint16_t))
 		{
-			while(block_from_client_.size() >= packet_size_)
-			{
-				write(fd, block_from_client_.data() + bytes, packet_size_);
-				block_from_client_.erase(block_from_client_.begin(), block_from_client_.begin() + packet_size_);
-				oss << "send next packet (" << packet_size_ << " bytes), remain: " << block_from_client_.size() << bytes;
-				LOG_STREAM(oss);
-				stopwatchStart(m_nTimeoutRx);
-			}
-			close(fd);
+			client_block_size_ = block_from_client_[0] << 8 | block_from_client_[1];
 		} else {
-			block_from_client_.clear();
+			// все блоки закончились
+			client_block_size_ = 0;
+			break;
 		}
 	}
 }
@@ -190,7 +198,6 @@ void worker_thread::data_process(std::unique_ptr<connection> &tcp, std::vector<b
 		default:
 			oss << "unknown block type: 0x" << std::hex << (int)nextBlock[2];
 	}
-
 	// сообщить клиенту результат обработки
 	data_answer(tcp, oss.str());
 	LOG_STREAM(oss);
