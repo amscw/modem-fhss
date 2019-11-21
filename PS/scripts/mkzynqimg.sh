@@ -61,9 +61,9 @@ if [[ $1 ]]; then
 			fi
 			mkimg
 			# программирует бинарник в таргет
-			$SDK_DIR/program_flash -f $PROJECT_DIR/$1/image/image.bin\
+			$SDK_DIR/program_flash -f $FW_DIR/PS/image/image.bin\
 				-flash_type qspi_single -verify -cable type xilinx_tcf			
-			rm -f image.bin
+			rm -f $FW_DIR/PS/image/image.bin
 			;;
 		*) 
 			echo "bad parameter: $1"
