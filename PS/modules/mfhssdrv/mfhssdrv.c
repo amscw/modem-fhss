@@ -457,8 +457,9 @@ static ssize_t mfhssdrv_read(struct file *filp,	char __user *ubuff,size_t count,
 		return 0;
 	}
 	n = REG_RD(DMA, DL);
-	copy_to_user(ubuff, charpriv->dst_addr, n);
+	copy_to_user(ubuff, charpriv->dst_addr, n <= count ? n : count);
 	charpriv->status.flags.rx_interrupt = 0;
+	PDEBUG("read %d/%d\n", n, count);
 	return n;
 }
 
