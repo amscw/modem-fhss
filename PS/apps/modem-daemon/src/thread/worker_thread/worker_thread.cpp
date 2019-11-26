@@ -69,6 +69,7 @@ void worker_thread::listen_modem() noexcept
 				{
 					// блок валиден, можно отдать клиенту
 					oss << "modem read complete (total: " <<  modem_block_size_ << " bytes)";
+					dump(block_from_modem_);
 					block_to_client_ = std::move(block_from_modem_);
 				} else {
 					// блок невалиден - несовпадение по размеру
@@ -95,6 +96,7 @@ void worker_thread::write_modem() noexcept
 		if (bytes == block_to_modem_.size())
 		{
 			oss << "modem write complete (total: " << bytes << " bytes)";
+			dump(block_to_modem_);
 			// уничтожить блок
 			bytes = 0;
 			block_to_modem_.clear();
