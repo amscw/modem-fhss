@@ -459,7 +459,7 @@ static ssize_t mfhssdrv_read(struct file *filp,	char __user *ubuff,size_t count,
 	n = REG_RD(DMA, DL);
 	copy_to_user(ubuff, charpriv->dst_addr, n <= count ? n : count);
 	charpriv->status.flags.rx_interrupt = 0;
-	PDEBUG("read %d/%d\n", n, count);
+	PDEBUG("read %d/%d bytes\n", n, count);
 	return n;
 }
 
@@ -472,15 +472,18 @@ static ssize_t mfhssdrv_write(struct file *filp, const char __user *ubuff, size_
 		count = MFHSSDRV_DMA_SIZE;
 
 	copy_from_user(charpriv->src_addr, ubuff, count);
+	PDEBUG("write %d bytes...", count);		
 	REG_WR(DMA, SL, count);
 	REG_WR(DMA, CR, 1);
-	res = wait_event_interruptible_timeout(charpriv->wq_tx, charpriv->status.flags.tx_interrupt != 0, msecs_to_jiffies(1000));
+	res = wait_event_interruptible_timeout(charpriv->wq_tx, charpriv->status.flags.tx_interrupt != 0, msecs_to_jiffies(2000));
 	if (res == 0)
 	{
 		// @condition evaluated to %false after the @timeout elapsed
+		PDEBUG("timeout!\n");
 		return 0;
 	}
 	charpriv->status.flags.tx_interrupt = 0;
+	PDEBUG("ok!\n");
 	return count;
 }
 
