@@ -55,7 +55,7 @@ void worker_thread::listen_modem() noexcept
 			oss << "--read: " << block_from_modem_.size() << " bytes";
 			LOG_STREAM(oss);
 			stopwatchStart(m_nTimeoutOp);
-		} else if (bytes == 0 && block_from_modem_.size() > 0 &&  ( (timeElapsed = stopwatchStop(m_nTimeoutOp)) >= 2000 ) ) {
+		} else if (bytes == 0 && block_from_modem_.size() > 0 &&  ( (timeElapsed = stopwatchStop(m_nTimeoutOp)) >= 3000 ) ) {
 			oss << "end of block, elapsed: " << timeElapsed << " ms";
 			LOG_STREAM(oss);
 			// больше не ждем, завершаем приём

@@ -537,7 +537,7 @@ int32_t ad9361_post_setup(struct ad9361_rf_phy *phy)
 			ADI_ENABLE | ADI_IQCOR_ENB);
 	}
 
-	flags = 0x0;
+	flags = BE_VERBOSE | BE_MOREVERBOSE;
 
 	ret = ad9361_dig_tune(phy, ((conv->chip_info->num_channels > 4) ||
 		axiadc_read(st, 0x0004)) ? 0 : 61440000, flags);

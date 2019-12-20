@@ -646,5 +646,8 @@ int main(void)
 	}
 #endif
 
+
+	// ad9361_bist_loopback(ad9361_phy, 1);
+
 	return 0;
 }
