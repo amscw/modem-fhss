@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 		regcreator = std::make_unique<regcreator_c>();
 		if (regcreator->DoEntries(regmap->GetRegs()) > 0)
 		{
-			regcreator->MakeDeviceRegs("/dev/mfhss0");
+			regcreator->MakeDeviceRegs("mfhss0");
 		}
 
 	} catch (regmapExc_c &exc) {

@@ -3,7 +3,15 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include "mfhssdrv_ioctl.h"
+
+#include "mfhssioctl.h"
+
+#if defined(DRV_TYPE_NET)
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#endif
 
 std::string regmapExc_c::strErrorMessages[] = {
 		"can't open file",
@@ -166,17 +174,27 @@ std::size_t regcreator_c::DoEntries(const regmap_c::regmap_t &regmap) noexcept
 void regcreator_c::MakeDeviceRegs(const std::string &deviceName) throw (regcreatorExc_c)
 {
 	int res;
-
+#if defined(DRV_TYPE_CHAR)
 	fd = open(deviceName.c_str(), O_RDWR);
+#elif defined(DRV_TYPE_NET)
+	struct ifreq ifr;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	std::memcpy(ifr.ifr_name, deviceName.c_str(), deviceName.length());
+#endif
 	if (fd == -1)
 		throw regcreatorExc_c(regcreatorExc_c::errCode_t::ERROR_OPENDEVICE, __FILE__, __FUNCTION__, deviceName);
 
 	for (auto e : entries)
 	{
-		MFHSS_GROUP_TypeDef groupDescr = {0};
+		MFHSS_DIR_TypeDef groupDescr = {0};
 
 		e.nodeName.copy(groupDescr.nodeName, e.nodeName.size());
-		res = ioctl(fd, MFHSSDRV_IOMAKEGROUP, &groupDescr);
+#if defined(DRV_TYPE_CHAR)
+		res = ioctl(fd, MFHSS_IOMAKEDIR, &groupDescr);
+#elif defined(DRV_TYPE_NET)
+		ifr.ifr_data = reinterpret_cast<char*>(&groupDescr);
+		res = ioctl(fd, MFHSS_IOMAKEDIR, &ifr);
+#endif
 		if (res != 0)
 		{
 			close(fd);
@@ -184,11 +202,16 @@ void regcreator_c::MakeDeviceRegs(const std::string &deviceName) throw (regcreat
 		}
 		for (auto r : e.regs)
 		{
-			MFHSS_REG_TypeDef regDescr = {0};
+			MFHSS_FILE_TypeDef regDescr = {0};
 			e.nodeName.copy(regDescr.targetNode, e.nodeName.size());
 			r.first.copy(regDescr.regName, r.first.size());
 			regDescr.address = r.second;
-			res = ioctl(fd, MFHSSDRV_IOMAKEREG, &regDescr);
+#if defined(DRV_TYPE_CHAR)
+			res = ioctl(fd, MFHSS_IOMAKEFILE, &regDescr);
+#elif defined(DRV_TYPE_NET)
+			ifr.ifr_data = reinterpret_cast<char*>(&regDescr);
+			res = ioctl(fd, MFHSS_IOMAKEFILE, &ifr);
+#endif
 			if (res != 0)
 			{
 				close(fd);
