@@ -1,0 +1,9 @@
+config BR2_PACKAGE_MFHSSNET
+	bool "modem-fhss network driver (custom mapped)"
+	default y
+	depends on BR2_LINUX_KERNEL
+	help
+	  Kernel module to support modem device.
+
+comment "MODEM-FHSS module requires a linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL
