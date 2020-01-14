@@ -1,0 +1,5 @@
+config BR2_PACKAGE_NW_CONFIGS
+	bool "nw-configs"
+	default y
+	help
+	  custom network application configs 
