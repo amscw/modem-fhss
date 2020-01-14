@@ -1,0 +1,3 @@
+ad9361/ 	--> /mnt/configs/
+nw-configs/ 	--> buildroot/package/
+axi_pkg.vhd	--> /mnt/configs
