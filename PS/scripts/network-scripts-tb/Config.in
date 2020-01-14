@@ -1,5 +1,0 @@
-config BR2_PACKAGE_NETWORK_SCRIPTS
-	bool "network-scripts"
-	default y
-	help
-	  NETWORK SCRIPTS component
