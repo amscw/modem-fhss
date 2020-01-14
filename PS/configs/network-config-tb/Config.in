@@ -1,5 +1,0 @@
-config BR2_PACKAGE_NETWORK_CONFIG
-	bool "network-config"
-	default y
-	help
-	  network configuration component

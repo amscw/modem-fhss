@@ -1,5 +1,0 @@
-config BR2_PACKAGE_FTP_CONFIG
-	bool "ftp-config"
-	default y
-	help
-	  PROFTPD configuration component
