@@ -18,42 +18,34 @@ case "$1" in
 		# FTP up
 		/usr/sbin/pure-ftpd /etc/pure-ftpd.conf
 		
-		# Loading modules...
-		#REGS=$(regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log)
-		#REGCOUNT=$(echo $REGS | grep -o ";" | wc -l)
-		modprobe mfhssdrv #regmap="$REGS" regcount=$REGCOUNT
-		regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log
-
-		# Loading modules...
+		# Loading modules
 		modprobe modem-capture
-
-		# Starting ad9361...
+		# modprobe mfhssnet
+		
+		# Load apps		
+		# regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log
 		ad9361
-
-		# Starting capture-daemon...
-		sh /root/modem-daemon start
-
-		# Starting capture-daemon...
 		sh /root/capture-daemon start
+		# sh /root/modem-daemon start
 		
 		# modem startup sequence
-		if [ -f /mnt/configs/startup-sequence.sh ]; then
-			sh /mnt/configs/startup-sequence.sh
-		fi
+		#if [ -f /mnt/configs/startup-sequence.sh ]; then
+		#	sh /mnt/configs/startup-sequence.sh
+		#fi
 		;;
 
 	stop)
 		# Stoppped capture-daemon...
 		sh /root/capture-daemon stop
 
-		# Stoppped capture-daemon...
-		sh /root/modem-daemon stop
+		# Stoppped modem-daemon...
+		#sh /root/modem-daemon stop
 
 		# Removing modules...
 		rmmod modem-capture
 
 		# Removing modules...
-		rmmod modem-fhss
+		# rmmod modem-fhss
 		;;
 
 	restart|reload)
