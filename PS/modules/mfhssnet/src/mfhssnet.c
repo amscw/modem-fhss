@@ -56,10 +56,10 @@ enum destroy_stage_ {
 enum close_stage_
 {
 	STAGE_FREE_ALL,
-	STAGE_FREE_DMA_SRC,
-	STAGE_FREE_DMA_DST,
-	STAGE_UNREG_IRQ_RX,
 	STAGE_UNREG_IRQ_TX,
+	STAGE_UNREG_IRQ_RX,
+	STAGE_FREE_DMA_DST,
+	STAGE_FREE_DMA_SRC,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -124,10 +124,10 @@ static const char * const destroy_stage_strings[] = {
 };
 static const char* const close_stage_strings[] = {
 	"free all",
-	"free DMA source memory",
-	"free DMA destination memory",
-	"unregister RX interrupt handler",
 	"unregister TX interrupt handler",
+	"unregister RX interrupt handler",
+	"free DMA destination memory",
+	"free DMA source memory",
 };
 static struct tasklet_struct tasklet_rx;
 
@@ -170,6 +170,23 @@ inline static void __print_dump(const u8 *data, int len)
 	}
 }
 
+inline static void __print_dump_pkt(struct mfhss_pkt_ *pkt)
+{
+	int i;
+	const int cols = 16;
+
+	if (pkt != NULL && pkt->data != NULL)
+	{
+		PDEBUG("packet(%d bytes):", pkt->datalen);
+		for (i = 0; i < pkt->datalen; i++)
+		{
+			if ((i % cols) == 0)
+				printk("\n");
+			printk("%02x ", pkt->data[i]);
+		}
+	}		
+}
+
 inline static void __print_MAC_address(const u8* const addr)
 {
 	if (addr)
@@ -201,7 +218,9 @@ static irqreturn_t irq_tx_handler(int irq, void *devid)
 
 static irqreturn_t irq_rx_handler(int irq, void *devid)
 {
+#if defined(MFHSS_DBG_INTERRUPTS)
 	static unsigned long cnt = 0;
+#endif // MFHSS_DBG_INTERRUPTS
 	struct mfhss_pkt_ *pkt;
 	struct net_device *dev = (struct net_device*) devid;
 	struct mfhss_priv_ *priv = netdev_priv(dev);
@@ -209,7 +228,9 @@ static irqreturn_t irq_rx_handler(int irq, void *devid)
 	// WARNING! For shared irq devid may be differ from our dev! Need to check priv pointer at least
 	if (priv != 0)
 	{
+#if defined(MFHSS_DBG_INTERRUPTS)
 		PDEBUG("rx interrupt occur for %s (total %lu)\n", dev->name, ++cnt);
+#endif // MFHSS_DBG_INTERRUPTS
 		pkt = pool_get();
 		if (pkt != NULL)
 		{	
@@ -247,6 +268,7 @@ inline static void __rx_pkt(struct net_device *dev)
 			priv->stats->rx_dropped++;
 		} else {
 			PDEBUG("received new packet at %s (%d bytes)\n", dev->name, pkt->datalen);
+			__print_dump_pkt(pkt);
 			skb_reserve(skb, 2);
 			memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
@@ -368,6 +390,7 @@ static void mfhss_cleanup(enum destroy_stage_ from, struct net_device *dev)
 				dev = NULL;
 			}
 			break;
+
 		default:
 			mfhss_cleanup(STAGE_DESTROY_ALL, dev);
 	}
@@ -404,6 +427,7 @@ static void mfhss_close_from(enum close_stage_ from, struct net_device *dev)
 		case STAGE_FREE_DMA_SRC:
 			PRINT_CLOSE_STG(STAGE_FREE_DMA_SRC);
 			dma_free_coherent(NULL, MFHSSNET_DMA_SIZE, priv->src_addr, priv->src_handle);
+			break;
 
 		default:
 			mfhss_close_from(STAGE_FREE_ALL, dev);
@@ -516,9 +540,10 @@ static int mfhss_tx_pkt(struct sk_buff *skb, struct net_device *dev)
 	__print_dump(data, len);
 
 	ip = (struct iphdr *)(data + sizeof(struct ethhdr));
-	PDEBUG("%s:%05i --> %s:%05i\n",
-		ipaddr_to_str(ip->saddr),ntohs(((struct tcphdr *)(ip+1))->source),
-		ipaddr_to_str(ip->daddr),ntohs(((struct tcphdr *)(ip+1))->dest));
+	// PDEBUG("%s:%05i --> %s:%05i\n",
+	// 	ipaddr_to_str(ip->saddr),ntohs(((struct tcphdr *)(ip+1))->source),
+	// 	ipaddr_to_str(ip->daddr),ntohs(((struct tcphdr *)(ip+1))->dest));
+	PDEBUG("%s --> %s\n", ipaddr_to_str(ip->saddr),	ipaddr_to_str(ip->daddr));
 
 	priv->skb = skb;				// Remember the skb, so we can free it at interrupt time
 	dev->trans_start = jiffies; 	// save the timestamp
@@ -676,11 +701,11 @@ static int mfhss_header(struct sk_buff *skb, struct net_device *dev, unsigned sh
 {
 	struct ethhdr *eth = (struct ethhdr *)skb_push(skb, ETH_HLEN);
 
-	PDEBUG("source:\n");
-	__print_MAC_address(saddr ? saddr : dev->dev_addr);
+	// PDEBUG("source:\n");
+	// __print_MAC_address(saddr ? saddr : dev->dev_addr);
 
-	PDEBUG("dest:\n");
-	__print_MAC_address(daddr);
+	// PDEBUG("dest:\n");
+	// __print_MAC_address(daddr);
 
 	eth->h_proto = htons(type);
 	memcpy(eth->h_source, saddr ? saddr : dev->dev_addr, dev->addr_len);

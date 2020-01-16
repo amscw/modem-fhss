@@ -55,7 +55,6 @@ void pool_destroy(void)
 	int i = 0;
 
 	spin_lock_irqsave(&lock, flags);
-	// FIXME: could not destroy packet in loop due to post-condition: p = p->next
 	list_for_each_safe(p, tmp, &pool_list)
 	{
 		pkt = list_entry(p, struct mfhss_pkt_, list);
