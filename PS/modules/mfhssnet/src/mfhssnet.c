@@ -12,6 +12,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/dma-mapping.h>
+#include <linux/interrupt.h>
 
 #include "mfhssnet.h"
 #include "mfhssfs.h"
@@ -21,11 +22,14 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("amscw");			// https://github.com/amscw
 
-
 //-------------------------------------------------------------------------------------------------
 // MACRO
 //-------------------------------------------------------------------------------------------------
 #define MFHSSNET_DMA_SIZE	2048
+// Default timeout period
+#define MFHSS_TX_TIMEOUT_MS	2000	 // In ms
+// #define MFHSS_DBG_INTERRUPTS
+
 #define PRINT_DSTR_STG(from) PDEBUG("stage%i:%s...\n", from, destroy_stage_strings[from])
 #define PRINT_CLOSE_STG(from) PDEBUG("stage%i:%s...\n", from, close_stage_strings[from])
 // WARNING: требуется контекст с priv
@@ -73,7 +77,6 @@ static int mfhss_header(struct sk_buff *skb, struct net_device *dev, unsigned sh
 static int mfhssnet_probe(struct platform_device *pl_dev);
 static int mfhssnet_remove(struct platform_device *pl_dev);
 
-
 //-------------------------------------------------------------------------------------------------
 // Varibles
 //-------------------------------------------------------------------------------------------------
@@ -92,8 +95,6 @@ static const struct header_ops mfhss_header_ops = {
     .create  = mfhss_header,
     .cache = NULL,
 };
-static int timeout = DUMMY_NETDEV_TIMEOUT;
-static unsigned long trans_start;
 /* static */const struct of_device_id mfhssnet_of_match[] = {
 	{ .compatible = "xlnx,axi-modem-fhss-1.0", },
 	{}
@@ -121,7 +122,6 @@ static const char * const destroy_stage_strings[] = {
 	"destroying interface statistics",
 	"free netdev",
 };
-
 static const char* const close_stage_strings[] = {
 	"free all",
 	"free DMA source memory",
@@ -129,6 +129,7 @@ static const char* const close_stage_strings[] = {
 	"unregister RX interrupt handler",
 	"unregister TX interrupt handler",
 };
+static struct tasklet_struct tasklet_rx;
 
 //-------------------------------------------------------------------------------------------------
 // Functions
@@ -155,170 +156,131 @@ static char *ipaddr_to_str(u32 ipaddr)
 	return str;
 }
 
-static void rx_int_en(struct net_device *dev, int enable)
+inline static void __print_dump(const u8 *data, int len)
 {
-	struct mfhss_priv_ *priv = netdev_priv(dev);
-	priv->rx_int_en = enable;
+	int i;
+	const int cols = 16;
+
+	PDEBUG("data(%d bytes):", len);
+	for (i = 0; i < len; i++)
+	{
+		if ((i % cols) == 0)
+			printk("\n");
+		printk("%02x ", data[i]);
+	}
 }
 
-// static void rxPkt(struct net_device *pDev, struct dumPacket_ *pPkt)
-// {
-// 	struct sk_buff *pSkB;
-// 	struct dumPriv_ *pPriv = netdev_priv(pDev);
-
-// 	// The packet has been retrived from transmission medium.
-// 	// Build an skb around it, so upper layers can handle it
-// 	pSkB = dev_alloc_skb(pPkt->datalen + 2);
-// 	if (pSkB == NULL)
-// 	{
-// 		if (printk_ratelimit())
-// 			PRINT_STATUS_MSG("cannot allocate socket buffer, packet dropped", -ENOMEM);
-// 		pPriv->stats.rx_dropped++;
-// 		return;			
-// 	}
-// 	skb_reserve(pSkB, 2); // align IP on 16-bit boundary
-// 	memcpy(skb_put(pSkB, pPkt->datalen), pPkt->data, pPkt->datalen);
-
-// 	// Write metadata, and then pass to the receive level
-// 	pSkB->dev = pDev;
-// 	pSkB->protocol = eth_type_trans(pSkB, pDev);
-// 	pSkB->ip_summed = CHECKSUM_UNNECESSARY;
-// 	pPriv->stats.rx_packets++;
-// 	pPriv->stats.rx_bytes += pPkt->datalen;
-// 	netif_rx(pSkB);
-// }
-
-static irqreturn_t irq_rx_handler(int irq, void *devid)
+inline static void __print_MAC_address(const u8* const addr)
 {
-	return IRQ_HANDLED;
+	if (addr)
+		PDEBUG("{%02x:%02x:%02x:%02x:%02x:%02x}\n", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
 }
 
 static irqreturn_t irq_tx_handler(int irq, void *devid)
 {
-	int status_word;
-	struct mfhss_priv_ *priv;
-	struct mfhss_pkt_ *pkt = NULL;
-	
-	// As usual, check the "device" pointer to be sure it is really interrupting.
-	// Then assign "struct device *dev"
-	struct net_device *dev = (struct net_device *)devid;
-	// and check with hw if it's really ours 
+#if defined(MFHSS_DBG_INTERRUPTS)
+	static unsigned long cnt = 0;
+#endif // MFHSS_DBG_INTERRUPTS
+	struct net_device *dev = (struct net_device*) devid;
+	struct mfhss_priv_ *priv = netdev_priv(dev);
 
-	// paranoid
-	if (dev == NULL)
-		return IRQ_NONE;
-
-	// Lock the device
-	priv = netdev_priv(dev);
-	spin_lock(&priv->lock);
-	// retrieve statusword: real netdevices use I/O instructions
-	status_word = priv->status;
-	// pPriv->status = 0;
-	// if (status_word & DUMMY_NETDEV_RX_INTR) {
-	// 	PDEBUG("rx interrupt occur at %s", pDev->name);
-	// 	// send it to rxPkt for handling 
-	// 	pPkt = dequeuePkt(pDev);
-	// 	if (pPkt) {
-	// 		PDEBUG("received new packet at %s, len %i", pDev->name, pPkt->datalen);
-	// 		rxPkt(pDev, pPkt);
-	// 	}
-	// }
-	if (status_word & DUMMY_NETDEV_TX_INTR) {
-		PDEBUG("tx interrupt occur at %s", dev->name);
-		// a transmission is over: free the skb
+	// WARNING! For shared irq devid may be differ from our dev! Need to check priv pointer at least
+	if (priv != 0)
+	{
+#if defined(MFHSS_DBG_INTERRUPTS)
+		PDEBUG("tx interrupt occur for %s (total %lu)\n", dev->name, ++cnt);
+#endif // MFHSS_DBG_INTERRUPTS
 		priv->stats->tx_packets++;
-		priv->stats->tx_bytes += priv->tx_pkt_len;
-		dev_kfree_skb(priv->skb);
-		priv->skb = NULL;
-		status_word &= ~DUMMY_NETDEV_TX_INTR;
-		priv->status = status_word;
-	}
-
-	// Unlock the device and we are done
-	spin_unlock(&priv->lock);
-	if (pkt) 
-		pool_put(pkt); // Do this outside the lock!
+		priv->stats->tx_bytes += priv->skb->len;
+		dev_kfree_skb_irq(priv->skb);
+		REG_WR(MLIP, SR, 0);
+		netif_wake_queue(dev);
+	} else return IRQ_NONE;
 	return IRQ_HANDLED;
 }
 
-static void tx_pkt_by_hw(char *buf, int len, struct net_device *dev)
+static irqreturn_t irq_rx_handler(int irq, void *devid)
 {
-	// This function deals with hw details. This interface loops back the packet to the other dummy interface (if any).
-	// In other words, this function implements the dummy-device behaviour, while all other procedures are rather device-independent
-	struct iphdr *ip;
-	struct mfhss_priv_ *priv;
-	u32 *saddr, *daddr;
-	struct mfhss_pkt_ *tx_buffer;
-    
-	// I am paranoid. Ain't I?
-	if (len < sizeof(struct ethhdr) + sizeof(struct iphdr))
+	static unsigned long cnt = 0;
+	struct mfhss_pkt_ *pkt;
+	struct net_device *dev = (struct net_device*) devid;
+	struct mfhss_priv_ *priv = netdev_priv(dev);
+
+	// WARNING! For shared irq devid may be differ from our dev! Need to check priv pointer at least
+	if (priv != 0)
 	{
-		PERR("packet too short (%i octets)", len);
-		return;
-	}
-	
-	// Ethhdr is 14 bytes, but the kernel arranges for iphdr
-	ip = (struct iphdr *)(buf + sizeof(struct ethhdr));
-	saddr = &ip->saddr;
-	daddr = &ip->daddr;
+		PDEBUG("rx interrupt occur for %s (total %lu)\n", dev->name, ++cnt);
+		pkt = pool_get();
+		if (pkt != NULL)
+		{	
+			pkt->dev = dev;
+			pkt->datalen = REG_RD(DMA, DL);
+			memcpy(pkt->data, priv->dst_addr, pkt->datalen);
+			list_add(&pkt->list, &priv->rx_pkts_list);
+			tasklet_schedule(&tasklet_rx);
+		} else {
+			// no free packets available, drop it
+			priv->stats->rx_dropped++;
+		} 
+		REG_WR(DMA, SR, 0);
+	} else return IRQ_NONE;
+	return IRQ_HANDLED;
+}
 
-	((u8*)saddr)[2] ^= 1; // change the third octet (class C)
-	((u8*)daddr)[2] ^= 1;
+inline static void __rx_pkt(struct net_device *dev)
+{
+	struct list_head *p, *tmp;
+	struct mfhss_pkt_ *pkt;
+	struct sk_buff *skb;
+	struct mfhss_priv_ *priv = netdev_priv(dev);
 
-	ip->check = 0;         // and rebuild the checksum (ip needs it)
-	ip->check = ip_fast_csum((unsigned char *)ip, ip->ihl);
-
-	PDEBUG("%s:%05i --> %s:%05i",
-		ipaddr_to_str(ip->saddr),ntohs(((struct tcphdr *)(ip+1))->source),
-		ipaddr_to_str(ip->daddr),ntohs(((struct tcphdr *)(ip+1))->dest));
-			
-	// Ok, now the packet is ready for transmission: first simulate a receive interrupt 
-	// on the twin device, then a transmission-done on the transmitting device
-	// pDest = dummyDevs[pDev == dummyDevs[0] ? 1 : 0];
-	// pPriv = netdev_priv(pDest);
-	tx_buffer = pool_get();
-	if (tx_buffer != NULL)
+	list_for_each_safe(p, tmp, &priv->rx_pkts_list)
 	{
-		tx_buffer->datalen = len;
-	 	// fake transmit packet
-		memcpy(tx_buffer->data, buf, len);
-		PDEBUG("hw tx packet by %s, len is %i", dev->name, len);
-		
-	  	// fake receive packet
-		// enqueuePkt(pDest, pTxBuffer);	
-		// if (pPriv->bIsRxIntEnabled) 
-		// {
-		// 	pPriv->status |= DUMMY_NETDEV_RX_INTR;
-		//  	dummyNetdevInterrupt(0, pDest, NULL);
-		// }
+		pkt = list_entry(p, struct mfhss_pkt_, list);
 
-		// terminate transmission
-		priv = netdev_priv(dev);
-		priv->tx_pkt_len = len;
-		priv->tx_pkt_data = buf;
-		priv->status |= DUMMY_NETDEV_TX_INTR;
-		// regular_int_handler(0, dev, NULL);
-		pool_put(tx_buffer);
+		// The packet has been retrived from transmission medium.
+		// Build an skb around it, so upper layers can handle it
+		skb = dev_alloc_skb(pkt->datalen + 2);
+		if (skb == NULL)
+		{
+			PERR("cannot allocate socket buffer, packet dropped");
+			priv->stats->rx_dropped++;
+		} else {
+			PDEBUG("received new packet at %s (%d bytes)\n", dev->name, pkt->datalen);
+			skb_reserve(skb, 2);
+			memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+			skb->protocol = eth_type_trans(skb, dev);
+			priv->stats->rx_packets++;
+			priv->stats->rx_bytes += pkt->datalen;
+			netif_rx(skb);
+		}
+		list_del(&pkt->list);
+		pool_put(pkt);
 	}
+}
+
+static void rx_pkt(unsigned long data)
+{
+	if (data)
+		__rx_pkt((struct net_device*)data);
 }
 
 // this callback called after allocation net_device structure
 static void mfhss_setup(struct net_device *dev)
 {
-	int err = 0;
 	// The init function (sometimes called probe).
 	// It is invoked by register_netdev()
+	
+	int err = 0;
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 
-	// Then, initialize the priv field. This encloses the statistics and a few private fields.
-
-	// PDEBUG("try to setup device 0x%p, pPriv=0x%p", pDev, pPriv);
-	
+	// Initialize the priv field. This encloses the statistics and a few private fields.
 	memset(priv, 0, sizeof(struct mfhss_priv_));
 	spin_lock_init(&priv->lock);
-	priv->dev = dev;
 
 #if 0
+	// TODO:
     // Make the usual checks: check_region(), probe irq, ...  -ENODEV
 	// should be returned if no device found.  No resource should be
 	// grabbed: this is done on open(). 
@@ -326,16 +288,23 @@ static void mfhss_setup(struct net_device *dev)
 
 	// Then, assign other fields in dev, using ether_setup() and some hand assignments
 	ether_setup(dev);	// assign some of the fields
-	dev->watchdog_timeo = timeout;
+	dev->watchdog_timeo = msecs_to_jiffies(MFHSS_TX_TIMEOUT_MS); 
 	
 	// keep the default flags, just add NOARP
-	dev->flags |= IFF_NOARP;
+	dev->flags |= IFF_POINTOPOINT | IFF_NOARP;
 	dev->features |= NETIF_F_HW_CSUM;
 	
+	// Assign the hardware address
+	memcpy(dev->dev_addr, "\0MFHSS", ETH_ALEN);
+	PDEBUG("MAC address %02x:%02x:%02x:%02x:%02x:%02x assigned", 
+		dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5]);
+
+	// Assign ops
 	dev->netdev_ops = &mfhss_net_device_ops;
 	dev->header_ops = &mfhss_header_ops;
 	
-	rx_int_en(dev, 1);	// enable receive interrupts
+	INIT_LIST_HEAD(&priv->rx_pkts_list);
+
 	PRINT_ERR(err);	
 }
 
@@ -494,12 +463,6 @@ static int mfhss_open(struct net_device *dev)
 	REG_WR(MLIP, CE, 1);
 	spin_unlock_irqrestore(&priv->lock, flags);
 
-	// Assign the hardware address
-	memcpy(dev->dev_addr, "\0FHSS0", ETH_ALEN);
-	PDEBUG("MAC address %02x:%02x:%02x:%02x:%02x:%02x assigned to %s", 
-		dev->dev_addr[0], dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3], dev->dev_addr[4], dev->dev_addr[5],
-		dev->name);
-
 	// start xmit
 	netif_start_queue(dev);
 	PRINT_ERR(err);
@@ -527,6 +490,46 @@ static int mfhss_close(struct net_device *dev)
 	
 	PRINT_ERR(err);
 	return err;	
+}
+
+static int mfhss_tx_pkt(struct sk_buff *skb, struct net_device *dev)
+{
+	unsigned long flags = 0;
+	int len, i;
+	char *data, shortpkt[ETH_ZLEN];
+	struct iphdr *ip;
+	struct mfhss_priv_ *priv = netdev_priv(dev);
+	
+	spin_lock_irqsave(&priv->lock, flags);
+	
+	// TODO: need use pool, and non-blocking transmit
+	netif_stop_queue(dev);
+	data = skb->data;
+	len = skb->len;
+	if (len < ETH_ZLEN) {
+		memset(shortpkt, 0, ETH_ZLEN);
+		memcpy(shortpkt, skb->data, skb->len);
+		len = ETH_ZLEN;
+		data = shortpkt;
+	}
+
+	__print_dump(data, len);
+
+	ip = (struct iphdr *)(data + sizeof(struct ethhdr));
+	PDEBUG("%s:%05i --> %s:%05i\n",
+		ipaddr_to_str(ip->saddr),ntohs(((struct tcphdr *)(ip+1))->source),
+		ipaddr_to_str(ip->daddr),ntohs(((struct tcphdr *)(ip+1))->dest));
+
+	priv->skb = skb;				// Remember the skb, so we can free it at interrupt time
+	dev->trans_start = jiffies; 	// save the timestamp
+
+	// fire!
+	memcpy(priv->src_addr, data, len);
+	REG_WR(DMA, SL, len);
+	REG_WR(DMA, CR, 1);
+
+	spin_unlock_irqrestore(&priv->lock, flags);
+	return NETDEV_TX_OK;
 }
 
 static int mfhss_config(struct net_device *dev, struct ifmap *map)
@@ -557,29 +560,6 @@ static int mfhss_config(struct net_device *dev, struct ifmap *map)
 	// ignore other fields
 	PRINT_ERR(err);
 	return err;
-}
-
-static int mfhss_tx_pkt(struct sk_buff *skb, struct net_device *dev)
-{
-	int len;
-	char *data, shortpkt[ETH_ZLEN];
-	struct mfhss_priv_ *priv = netdev_priv(dev);
-	
-	data = skb->data;
-	len = skb->len;
-	if (len < ETH_ZLEN) {
-		memset(shortpkt, 0, ETH_ZLEN);
-		memcpy(shortpkt, skb->data, skb->len);
-		len = ETH_ZLEN;
-		data = shortpkt;
-	}
-	trans_start = jiffies; 	// save the timestamp
-	priv->skb = skb;				// Remember the skb, so we can free it at interrupt time
-
-	// actual deliver of data is device-specific, and not shown here
-	tx_pkt_by_hw(data, len, dev);
-
-	return NETDEV_TX_OK;
 }
 
 static int mfhss_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
@@ -672,10 +652,10 @@ static void mfhss_tx_timeout (struct net_device *dev)
 {
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 
-	PDEBUG("Transmit timeout at %ld, latency %ld\n", jiffies, jiffies - trans_start);
+	PDEBUG("Transmit timeout! latency: %d ms\n", jiffies_to_msecs(jiffies - dev->trans_start));
     
     // Simulate a transmission interrupt to get things moving
-	priv->status = DUMMY_NETDEV_TX_INTR;
+	// priv->status = DUMMY_NETDEV_TX_INTR;
 	// regular_int_handler(0, dev, NULL);
 	priv->stats->tx_errors++;
 	netif_wake_queue(dev);
@@ -696,10 +676,15 @@ static int mfhss_header(struct sk_buff *skb, struct net_device *dev, unsigned sh
 {
 	struct ethhdr *eth = (struct ethhdr *)skb_push(skb, ETH_HLEN);
 
+	PDEBUG("source:\n");
+	__print_MAC_address(saddr ? saddr : dev->dev_addr);
+
+	PDEBUG("dest:\n");
+	__print_MAC_address(daddr);
+
 	eth->h_proto = htons(type);
 	memcpy(eth->h_source, saddr ? saddr : dev->dev_addr, dev->addr_len);
 	memcpy(eth->h_dest, daddr ? daddr : dev->dev_addr, dev->addr_len);
-	eth->h_dest[ETH_ALEN-1]   ^= 0x01;   /* dest is us xor 1 */
 	return (dev->hard_header_len);
 }
 
@@ -823,6 +808,9 @@ static int mfhssnet_probe(struct platform_device *pl_dev)
 
 	// now save it
 	platform_set_drvdata(pl_dev, dev);
+
+	// tasklet init
+	tasklet_init(&tasklet_rx, rx_pkt, (unsigned int)dev);
 
 	PRINT_ERR(err);
 	return err;

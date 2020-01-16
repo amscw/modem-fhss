@@ -49,11 +49,14 @@ int pool_create(struct net_device *dev, size_t maxlen)
 
 void pool_destroy(void) 
 {
+	unsigned long flags = 0;
 	struct mfhss_pkt_ *pkt;
-	struct list_head *p;
+	struct list_head *p, *tmp;
 	int i = 0;
 
-	list_for_each(p, &pool_list)
+	spin_lock_irqsave(&lock, flags);
+	// FIXME: could not destroy packet in loop due to post-condition: p = p->next
+	list_for_each_safe(p, tmp, &pool_list)
 	{
 		pkt = list_entry(p, struct mfhss_pkt_, list);
 		if (pkt->data != NULL)
@@ -64,6 +67,7 @@ void pool_destroy(void)
 		kfree(pkt);
 		i++;
 	}
+	spin_unlock_irqrestore(&lock, flags);
 	count -= i;
 	PDEBUG("destroyed %i packets in pool\n", i);
 	// FIXME: in-flight packets (currently used)?
