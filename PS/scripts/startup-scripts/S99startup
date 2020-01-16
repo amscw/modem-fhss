@@ -7,31 +7,39 @@ source /etc/network/system.conf
 
 case "$1" in
 	start)
-		# Starting startup script...
-
-		# Network configuration
+		# Loading modules
+		modprobe modem-capture
+		modprobe mfhssnet
+		
+		# Network bridge configuration
 		ifconfig eth0 down
+		ifconfig mfhss0 down
+		brctl addbr br0
+		brctl addif br0 eth0
+		brctl addif br0 mfhss0
+		brctl stp br0 off
 		ifconfig eth0 hw ether $HWADDR
-		ifconfig eth0 inet $IPADDR
+		ifconfig eth0 inet 0.0.0.0
+		ifconfig mfhss0 inet 0.0.0.0
+		ifconfig br0 inet $IPADDR
 		ifconfig eth0 up
+		ifconfig mod0 up
+		ifconfig br0 up
 
 		# FTP up
 		/usr/sbin/pure-ftpd /etc/pure-ftpd.conf
 		
-		# Loading modules
-		modprobe modem-capture
-		# modprobe mfhssnet
 		
 		# Load apps		
-		# regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log
+		regparser /etc/axi_pkg.vhd 2>/var/log/regparser.log
 		ad9361
 		sh /root/capture-daemon start
 		# sh /root/modem-daemon start
 		
 		# modem startup sequence
-		#if [ -f /mnt/configs/startup-sequence.sh ]; then
-		#	sh /mnt/configs/startup-sequence.sh
-		#fi
+		if [ -f /mnt/configs/startup-sequence.sh ]; then
+			sh /mnt/configs/startup-sequence.sh
+		fi
 		;;
 
 	stop)
@@ -41,11 +49,13 @@ case "$1" in
 		# Stoppped modem-daemon...
 		#sh /root/modem-daemon stop
 
-		# Removing modules...
-		rmmod modem-capture
+		#ifconfig eth0 down
+		ifconfig mfhss0 down
+		#ifconfig br0 down
 
 		# Removing modules...
-		# rmmod modem-fhss
+		rmmod modem-capture
+		modprobe -r mfhssnet
 		;;
 
 	restart|reload)
