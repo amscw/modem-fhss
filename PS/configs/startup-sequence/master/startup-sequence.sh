@@ -2,7 +2,7 @@
 
 if [ -d /sys/mfhss-dynamic ]; then
 	echo 1 >> /sys/mfhss-dynamic/m/master # 1 - master / 0 - slave
-	echo 2 >> /sys/mfhss-dynamic/m/mode # ("00" - Симплексный, "01" - Полудуплексный, "10" - Полнодуплексный)
+	echo 1 >> /sys/mfhss-dynamic/m/mode # ("00" - Симплексный, "01" - Полудуплексный, "10" - Полнодуплексный)
 	echo 100000 >> /sys/mfhss-dynamic/dlink/reqpack_tr_size
 	echo 100 >> /sys/mfhss-dynamic/dlink/ackpack_tr_size
 	echo 384 >> /sys/mfhss-dynamic/dlink/datapack_mdata_size
@@ -28,7 +28,6 @@ if [ -d /sys/mfhss-dynamic ]; then
 	echo 0 >> /sys/mfhss-dynamic/phy/ic_att_mode
 	echo 0 >> /sys/mfhss-dynamic/phy/ic_att_value
 	echo 200 >> /sys/mfhss-dynamic/phy/m_hop_est_max
-	echo 1 >> /sys/mfhss-dynamic/sap/loop	
 	# Ключи
 	echo 1 >> /sys/mfhss-dynamic/phy/m_hop_seed
 	echo 1 >> /sys/mfhss-dynamic/dlink/coder_seed

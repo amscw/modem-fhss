@@ -444,14 +444,14 @@ static int mfhss_open(struct net_device *dev)
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 
 	// request DMA memories
-	priv->src_addr = dma_alloc_coherent(NULL, MFHSSNET_DMA_SIZE, &priv->src_handle, GFP_KERNEL);
+	priv->src_addr = dma_zalloc_coherent(NULL, MFHSSNET_DMA_SIZE, &priv->src_handle, GFP_KERNEL);
 	if (priv->src_addr == NULL)
 	{
 		PRINT_ERR(err = -ENOMEM);
 		return err;
 	}
 
-	priv->dst_addr = dma_alloc_coherent(NULL, MFHSSNET_DMA_SIZE, &priv->dst_handle, GFP_KERNEL);
+	priv->dst_addr = dma_zalloc_coherent(NULL, MFHSSNET_DMA_SIZE, &priv->dst_handle, GFP_KERNEL);
 	if (priv->dst_addr == NULL)
 	{
 		PRINT_ERR(err = -ENOMEM);
