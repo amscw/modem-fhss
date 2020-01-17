@@ -5,8 +5,8 @@
 
 AD9361_CONF_SRC="/mnt/configs/ad9361/config.yaml"
 AD9361_FIR_SRC="/mnt/configs/ad9361/ad9361_fir.conf"
-NET_CONF_SRC="/mnt/configs/network/system.conf"
-FTP_CONF_SRC="/mnt/configs/ftp/pure-ftpd.conf"
+NET_CONF_SRC="/mnt/configs/nw-configs/system.conf"
+FTP_CONF_SRC="/mnt/configs/nw-configs/pure-ftpd.conf"
 REGMAP_SRC="/mnt/configs/axi_pkg.vhd"
 CONFIG_SRC="/mnt/configs/config.yaml"
 
