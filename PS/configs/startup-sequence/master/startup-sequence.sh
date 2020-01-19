@@ -35,7 +35,7 @@ if [ -d /sys/mfhss-dynamic ]; then
 	echo 19088743 >> /sys/mfhss-dynamic/sap/key_intr
 	echo 5 >> /sys/mfhss-dynamic/sap/size_pr
 	echo 100 >> /sys/mfhss-dynamic/sap/size_pack
-	echo 1 >> /sys/mfhss-dynamic/dlink/ber_en
+	echo 0 >> /sys/mfhss-dynamic/dlink/ber_en
 	echo 1 >> /sys/mfhss-dynamic/sap/en
 	echo 1 >> /sys/mfhss-dynamic/dlink/coder_en
 	echo 1 >> /sys/mfhss-dynamic/m/rst
