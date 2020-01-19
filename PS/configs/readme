@@ -1,6 +1,4 @@
 ad9361/ 	--> /mnt/configs/
 nw-configs/ 	--> buildroot/package/
-nw-configs/dotSSH/id_rsa.pub --> /root/.ssh/authorized_keys (of targert)
-nw-configs/dorSSH/id_rsa --> ~/.ssh/
 axi_pkg.vhd	--> /mnt/configs
 
