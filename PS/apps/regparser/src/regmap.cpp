@@ -46,9 +46,10 @@ regmap_c::~regmap_c() noexcept
 size_t regmap_c::Parse() throw (regmapExc_c)
 {
 	std::ostringstream ossBlock, oss;
-	std::string strBlock, str, strRegName/*, strRegAddr*/;
+	std::string strBlock, str, strRegName, strRegAddr;
 	std::smatch match;
 	std::uint32_t nRegAddr;
+	std::size_t pos = std::string::npos;
 
 	m_in.seekg(0);
 	while (m_in.good())
@@ -84,8 +85,16 @@ size_t regmap_c::Parse() throw (regmapExc_c)
 					throw (regmapExc_c(regmapExc_c::errCode_t::ERROR_PARSE, __FILE__, __FUNCTION__, strBlock));
 				}
 
+				// ищем оператор присваивания
+				if ((pos = strBlock.find(":=")) != std::string::npos)
+				{
+					strRegAddr = strBlock.substr(pos + std::strlen(":="));
+				} else {
+					throw (regmapExc_c(regmapExc_c::errCode_t::ERROR_PARSE, __FILE__, __FUNCTION__, strBlock));
+				}
+
 				// ищем адрес регистра
-				if (std::regex_search(strBlock, match, std::regex("[0-9]+")))
+				if ( std::regex_search(strRegAddr, match, std::regex("[0-9]+")))
 				{
 					str = match.str();
 					nRegAddr = std::stoul(str, nullptr, 10) * 4;
@@ -96,8 +105,8 @@ size_t regmap_c::Parse() throw (regmapExc_c)
 				// записываем в контейнер
 				regmap.emplace_back(regentry_t(strRegName, nRegAddr));
 
-				// oss << "register: \"" << strRegName << "@0x" << std::hex << nRegAddr;
-				// TRACE(oss);
+				//oss << "register: \"" << strRegName << "@0x" << std::hex << nRegAddr;
+				//TRACE(oss);
 			} else {
 				oss << "register not valid:(\"" <<  strBlock << "\")";
 				TRACE(oss);
@@ -162,7 +171,7 @@ std::size_t regcreator_c::DoEntries(const regmap_c::regmap_t &regmap) noexcept
 			TRACE(oss);
 			entries.emplace_back(nodeName, regentry_c::reg_t(regName, reg.second));
 		}
-		oss << "register \"" << std::setw(16) << regName << "\" added to node \"" << std::setw(16) << nodeName << "\"";
+		oss << "register \"" << regName << "\" " << "(0x" << std::hex << reg.second << ") added to dir \"" << nodeName << "/\"";
 		TRACE(oss);
 	}
 
