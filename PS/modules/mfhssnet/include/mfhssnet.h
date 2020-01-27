@@ -63,6 +63,7 @@ struct mfhss_priv_ {
 	dma_addr_t dst_handle;
 	int irq_rx;
 	int irq_tx;
+	int irq_link_on;
 
 	// network data
 	struct list_head rx_pkts_list;

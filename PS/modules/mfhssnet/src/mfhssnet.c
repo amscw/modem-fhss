@@ -820,7 +820,8 @@ static int mfhssnet_probe(struct platform_device *pl_dev)
 	// извлечь номера прерываний
 	priv->irq_rx = irq_of_parse_and_map(pl_dev->dev.of_node, 0);
 	priv->irq_tx = irq_of_parse_and_map(pl_dev->dev.of_node, 1);
-	PDEBUG("irq_rx=%d, irq_tx=%d\n", priv->irq_rx, priv->irq_tx);
+	priv->irq_link_on = irq_of_parse_and_map(pl_dev->dev.of_node, 2);
+	PDEBUG("irq_rx=%d, irq_tx=%d, irq_link_on=%d\n", priv->irq_rx, priv->irq_tx, priv->irq_link_on);
 
 	// That's ok! Register the device
 	if ((err = register_netdev(dev)) != 0)
