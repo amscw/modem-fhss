@@ -27,6 +27,14 @@ typedef struct
 	/* const */ char nodeName[REG_NAME_SIZE];
 } MFHSS_DIR_TypeDef;
 
+typedef union 
+{
+	struct {
+		unsigned link_on : 1;				// !!! read-only for app, need lock !!!
+	} __attribute__ ((__packed__)) bits;
+	u32 word;
+} MFHSS_flags_TypeDef;
+
 #if defined(DRV_TYPE_CHAR)
 /* Use 'm' as mfhssdrv magic number */
 #define MFHSS_IOC_MAGIC 'm'
@@ -42,6 +50,7 @@ typedef struct
 #define MFHSS_IORESET			(SIOCDEVPRIVATE)
 #define MFHSS_IOMAKEFILE		(SIOCDEVPRIVATE + 1)
 #define MFHSS_IOMAKEDIR			(SIOCDEVPRIVATE + 2)
+#define MFHSS_IOCHECK			(SIOCDEVPRIVATE + 3)
 #endif
 
 #endif // _MFHSSIOCTL_H

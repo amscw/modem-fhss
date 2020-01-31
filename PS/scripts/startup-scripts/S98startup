@@ -7,11 +7,13 @@ AD9361_CONF_SRC="/mnt/configs/ad9361/config.yaml"
 AD9361_FIR_SRC="/mnt/configs/ad9361/ad9361_fir.conf"
 NET_CONF_SRC="/mnt/configs/system.conf"
 REGMAP_SRC="/mnt/configs/axi_pkg.vhd"
+KS_CONFIG_SRC="/mnt/configs/ks-config.yaml"
 
 AD9361_CONF_DST="/etc/ad9361/config.yaml"
 AD9361_FIR_DST="/etc/ad9361/ad9361_fir.conf"
 NET_CONF_DST="/etc/network/system.conf"
 REGMAP_DST="/etc/axi_pkg.vhd"
+KS_CONFIG_DST="/etc/ks-config.yaml"
 
 if [ -f $AD9361_CONF_SRC ]; then
 	cp -rf $AD9361_CONF_SRC $AD9361_CONF_DST;
@@ -30,6 +32,10 @@ if [ -f $REGMAP_SRC ]; then
 	cp -rf $REGMAP_SRC $REGMAP_DST;
 else 
 	echo "not found: $REGMAP_SRC" >> /var/log/startup.log
+fi
+
+if [ -f $KS_CONFIG_SRC ]; then
+	cp -rf $KS_CONFIG_SRC $KS_CONFIG_DST;
 fi
 
 exit $?

@@ -56,10 +56,36 @@ enum destroy_stage_ {
 enum close_stage_
 {
 	STAGE_FREE_ALL,
+	STAGE_UNREG_IRQ_LINK_ON,
 	STAGE_UNREG_IRQ_TX,
 	STAGE_UNREG_IRQ_RX,
 	STAGE_FREE_DMA_DST,
 	STAGE_FREE_DMA_SRC,
+};
+
+// -- регистр статуса LINK (0-ой бит - link on, 1-ый бит - link off)
+// 	constant ADDR_REG_LINK_SR                    : integer := 12;
+// -- регистр включения прерываний LINK (0-ой бит - link on, 1-ый бит - link off)
+// 	constant ADDR_REG_LINK_IR                    : integer := 13;
+
+union reg_link_sr_
+{
+	struct 
+	{
+		unsigned is_on: 1;
+		unsigned is_off: 1;
+	} __attribute__((__packed__)) bits;
+	u32 word;
+};
+
+union reg_link_ir_
+{
+	struct 
+	{
+		unsigned int_on_en: 1; 
+		unsigned int_off_en: 1;
+	} __attribute__((__packed__)) bits;
+	u32 word;	
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -124,6 +150,7 @@ static const char * const destroy_stage_strings[] = {
 };
 static const char* const close_stage_strings[] = {
 	"free all",
+	"unregister LINK_ON interrupt handler",
 	"unregister TX interrupt handler",
 	"unregister RX interrupt handler",
 	"free DMA destination memory",
@@ -154,6 +181,20 @@ static char *ipaddr_to_str(u32 ipaddr)
 		index = 0;
 
 	return str;
+}
+
+static char *macaddr_to_str(u8 macaddr[ETH_ALEN])
+{
+	static char mactable[10][18];
+	static int index = 0;
+	char *str = &mactable[index][0];
+
+	sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x:", macaddr[0], macaddr[1], macaddr[2], macaddr[3], macaddr[4], macaddr[5]);
+
+	if (++index == sizeof mactable / sizeof *mactable)
+		index = 0;
+
+	return str;	
 }
 
 inline static void __print_dump(const u8 *data, int len)
@@ -187,10 +228,41 @@ inline static void __print_dump_pkt(struct mfhss_pkt_ *pkt)
 	}		
 }
 
-inline static void __print_MAC_address(const u8* const addr)
+// inline static void __print_MAC_address(const u8* const addr)
+// {
+// 	if (addr)
+// 		PDEBUG("{%02x:%02x:%02x:%02x:%02x:%02x}\n", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+// }
+
+static irqreturn_t irq_link_on_handler(int irq, void *devid)
 {
-	if (addr)
-		PDEBUG("{%02x:%02x:%02x:%02x:%02x:%02x}\n", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+#if defined(MFHSS_DBG_INTERRUPTS)
+	static unsigned long cnt = 0;
+#endif // MFHSS_DBG_INTERRUPTS
+	struct net_device *dev = (struct net_device*) devid;
+	struct mfhss_priv_ *priv = netdev_priv(dev);
+	union reg_link_sr_ reg_link_sr;
+
+	// WARNING! For shared irq devid may be differ from our dev! Need to check priv pointer at least
+	if (priv != NULL)
+	{
+#if defined(MFHSS_DBG_INTERRUPTS)
+		PDEBUG("link_on interrupt occur for %s (total %lu)\n", dev->name, ++cnt);
+#endif // MFHSS_DBG_INTERRUPTS
+		reg_link_sr.word = REG_RD(LINK, SR);
+		if (reg_link_sr.bits.is_on) {
+			priv->flags.bits.link_on = 1;
+			reg_link_sr.bits.is_on = 0;
+			REG_WR(LINK, SR, reg_link_sr.word);
+		} else if (reg_link_sr.bits.is_off) {
+			priv->flags.bits.link_on = 0;
+			reg_link_sr.bits.is_off = 0;
+			REG_WR(LINK, SR, reg_link_sr.word);
+		} else {
+			return IRQ_NONE;
+		}
+	} else return IRQ_NONE;
+	return IRQ_HANDLED;
 }
 
 static irqreturn_t irq_tx_handler(int irq, void *devid)
@@ -202,7 +274,7 @@ static irqreturn_t irq_tx_handler(int irq, void *devid)
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 
 	// WARNING! For shared irq devid may be differ from our dev! Need to check priv pointer at least
-	if (priv != 0)
+	if (priv != NULL)
 	{
 #if defined(MFHSS_DBG_INTERRUPTS)
 		PDEBUG("tx interrupt occur for %s (total %lu)\n", dev->name, ++cnt);
@@ -226,7 +298,7 @@ static irqreturn_t irq_rx_handler(int irq, void *devid)
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 
 	// WARNING! For shared irq devid may be differ from our dev! Need to check priv pointer at least
-	if (priv != 0)
+	if (priv != NULL)
 	{
 #if defined(MFHSS_DBG_INTERRUPTS)
 		PDEBUG("rx interrupt occur for %s (total %lu)\n", dev->name, ++cnt);
@@ -412,6 +484,10 @@ static void mfhss_close_from(enum close_stage_ from, struct net_device *dev)
 		case STAGE_FREE_ALL:
 			PRINT_CLOSE_STG(STAGE_FREE_ALL);
 
+		case STAGE_UNREG_IRQ_LINK_ON:
+			PRINT_CLOSE_STG(STAGE_UNREG_IRQ_LINK_ON);
+			free_irq(priv->irq_link_on, dev);
+
 		case STAGE_UNREG_IRQ_TX:
 			PRINT_CLOSE_STG(STAGE_UNREG_IRQ_TX);
 			free_irq(priv->irq_tx, dev);
@@ -441,6 +517,7 @@ static int mfhss_open(struct net_device *dev)
 {
 	int err = 0;
 	unsigned long flags = 0;
+	union reg_link_ir_ reg_link_ir;
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 
 	// request DMA memories
@@ -476,6 +553,15 @@ static int mfhss_open(struct net_device *dev)
 		return err;
 	}
 
+	err = request_irq(priv->irq_link_on, irq_link_on_handler, IRQF_SHARED, DRIVER_NAME, dev);
+	if (err != 0)
+	{
+		PRINT_ERR (err);
+		mfhss_close_from(STAGE_UNREG_IRQ_TX, dev);
+		return err;
+	}
+
+
 	// start the device
 	spin_lock_irqsave(&priv->lock, flags);
 	REG_WR(DMA, SA, priv->src_handle);
@@ -485,6 +571,9 @@ static int mfhss_open(struct net_device *dev)
 	REG_WR(MLIP, IR, 1);
 	REG_WR(DMA, IR, 1);
 	REG_WR(MLIP, CE, 1);
+	reg_link_ir.bits.int_on_en = 1;
+	reg_link_ir.bits.int_off_en = 1;
+	REG_WR(LINK, IR, reg_link_ir.word);
 	spin_unlock_irqrestore(&priv->lock, flags);
 
 	// start xmit
@@ -519,11 +608,13 @@ static int mfhss_close(struct net_device *dev)
 static int mfhss_tx_pkt(struct sk_buff *skb, struct net_device *dev)
 {
 	unsigned long flags = 0;
-	int len, i;
-	char *data, shortpkt[ETH_ZLEN];
+	int len;
 	struct iphdr *ip;
+	struct ethhdr *eth;
+	char *data, shortpkt[ETH_ZLEN];
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 	
+
 	spin_lock_irqsave(&priv->lock, flags);
 	
 	// TODO: need use pool, and non-blocking transmit
@@ -539,12 +630,27 @@ static int mfhss_tx_pkt(struct sk_buff *skb, struct net_device *dev)
 
 	// __print_dump(data, len);
 
+	eth = (struct ethhdr *)(data);
 	ip = (struct iphdr *)(data + sizeof(struct ethhdr));
+	
+	switch(ntohs(eth->h_proto))
+	{
+		case ETH_P_ARP:
+			PDEBUG("[ARP] %s --> %s\n", macaddr_to_str(eth->h_source),	macaddr_to_str(eth->h_dest));
+			break;
+
+		case ETH_P_IP:
+			PDEBUG("[IP] %s --> %s\n", ipaddr_to_str(ip->saddr),	ipaddr_to_str(ip->daddr));
+			break;
+
+		default:
+			PDEBUG("[UNK] unknown packet type (0x%x)\n", ntohs(eth->h_proto));
+	}
+
 	// PDEBUG("%s:%05i --> %s:%05i\n",
 	// 	ipaddr_to_str(ip->saddr),ntohs(((struct tcphdr *)(ip+1))->source),
 	// 	ipaddr_to_str(ip->daddr),ntohs(((struct tcphdr *)(ip+1))->dest));
-	PDEBUG("%s --> %s\n", ipaddr_to_str(ip->saddr),	ipaddr_to_str(ip->daddr));
-
+	
 	priv->skb = skb;				// Remember the skb, so we can free it at interrupt time
 	dev->trans_start = jiffies; 	// save the timestamp
 
@@ -593,10 +699,12 @@ static int mfhss_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 	struct mfhss_priv_ *priv = netdev_priv(dev);
 	struct list_head *p;
 	struct kobject *k;
+	unsigned long flags;
 	
 	MFHSS_FILE_TypeDef file_descr;
 	MFHSS_DIR_TypeDef dir_descr;
-	
+	MFHSS_flags_TypeDef mflags;
+
 	if (req == NULL)
 	{
 		PRINT_ERR(err = -EFAULT);
@@ -613,6 +721,7 @@ static int mfhss_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 		break;
 
 	case MFHSS_IOMAKEDIR:
+		// запрос создания директории (объекта kobject)
 		// PDEBUG("Perform 0x%04x (MFHSS_IOMAKEDIR) @ %s\n", cmd, req->ifr_name);
 		// retrieve directory descriptor
 		copy_from_user(&dir_descr, (const void __user *)req->ifr_data, sizeof dir_descr);
@@ -621,6 +730,7 @@ static int mfhss_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 		break;
 
 	case MFHSS_IOMAKEFILE:
+		// запрос создания файла (атрибута)
 		// забираем описание файла из пространства пользователя
 		// PDEBUG("Perform 0x%04x (MFHSS_IOMAKEFILE)@%s", cmd, req->ifr_name);
 		// retrieve directory descriptor
@@ -638,11 +748,19 @@ static int mfhss_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 		}
 		break;
 
+	case MFHSS_IOCHECK:
+		// запрос флагов модема
+		spin_lock_irqsave(&priv->lock, flags);
+		mflags.word = priv->flags.word;
+		spin_unlock_irqrestore(&priv->lock, flags);
+		copy_to_user((void __user *)req->ifr_data, &mflags, sizeof mflags);
+		break;
+
 	default:
 		PERR("unsupported command: 0x%04x@%s\n", cmd, req->ifr_name);
 		err = -ENOTTY;
 	}
-	PRINT_ERR(err);
+	// PRINT_ERR(err);
 	return err;
 }
 
@@ -771,7 +889,17 @@ static int mfhssnet_probe(struct platform_device *pl_dev)
 		mfhss_cleanup(STAGE_DESTROY_STATIC_REGS_DIR, dev);
 		return err;
 	}
+
 	err = create_mlip_subdir(priv->static_regs, priv);
+	if (err != 0)
+	{
+		PRINT_ERR(err);
+		// если была создана хотя бы одна поддиректория, нужно вызывать очистку каталога, и только потом его снос
+		mfhss_cleanup(STAGE_CLEAN_STATIC_REGS_DIR, dev);
+		return err;
+	}
+
+	err = create_link_subdir(priv->static_regs, priv);
 	if (err != 0)
 	{
 		PRINT_ERR(err);

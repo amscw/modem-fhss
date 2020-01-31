@@ -1,0 +1,5 @@
+config BR2_PACKAGE_KEYSENDER_DAEMON
+	bool "keysender-daemon"
+	default y
+	help
+	  keysender-daemon component

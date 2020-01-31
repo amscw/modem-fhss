@@ -33,6 +33,10 @@
 #define REG_MLIP_RST_ADDRESS	0x0028
 #define REG_MLIP_CE_NAME		"ce"
 #define REG_MLIP_CE_ADDRESS		0x002C
+#define REG_LINK_SR_NAME		"link" 
+#define REG_LINK_SR_ADDRESS		0x0030
+#define REG_LINK_IR_NAME		"link"
+#define REG_LINK_IR_ADDRESS		0x0034
 
 //-------------------------------------------------------------------------------------------------
 // Types
@@ -78,6 +82,15 @@ struct mfhss_priv_ {
 	// sysfs data
 	struct kset *static_regs;
 	struct kset *dynamic_regs;
+
+	// flags
+	union 
+	{
+		struct {
+			unsigned link_on : 1;				// !!! read-only for app, need lock !!!
+		} __attribute__ ((__packed__)) bits;
+		u32 word;
+	} flags;
 };
 
 

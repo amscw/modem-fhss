@@ -129,6 +129,16 @@ static struct attribute *MLIP_attributes[] = {
 };
 MAKE_DIR_TYPE(MLIP);
 
+// hardcoded LINK registers
+MAKE_REG(LINK, SR);
+MAKE_REG(LINK, IR);
+static struct attribute *LINK_attributes[] = {
+	&REG(LINK, SR).default_attribute,
+	&REG(LINK, IR).default_attribute,
+	NULL
+};
+MAKE_DIR_TYPE(LINK);
+
 // sysfs objects and attributes for dynamic registers
 static struct reg_attribute reg_value = {
 	{ .name = "value", .mode = S_IRUGO | S_IWUSR },
@@ -235,6 +245,37 @@ int create_mlip_subdir(struct kset* dir, struct mfhss_priv_ *priv)
 	kobject_init(&subdir->kobj, &DIR_TYPE(MLIP));
 	subdir->kobj.kset = dir;
 	err = kobject_add(&subdir->kobj, &dir->kobj, "%s", "mlip");
+	if (err != 0)
+	{
+		PRINT_ERR(err);
+		kobject_put(&subdir->kobj);
+	} else {
+		subdir->priv = priv;
+	}
+	return err;
+}
+
+int create_link_subdir(struct kset* dir, struct mfhss_priv_ *priv)
+{
+	int err = 0;
+	struct reg_dir *subdir;
+
+	if (dir == NULL || priv == NULL)
+	{
+		PRINT_ERR(err = -EFAULT);
+		return err;
+	}
+
+	subdir = kzalloc(sizeof *subdir, GFP_KERNEL);
+	if (subdir == NULL)
+	{
+		PRINT_ERR(err = -ENOMEM)
+		return err;
+	}
+
+	kobject_init(&subdir->kobj, &DIR_TYPE(LINK));
+	subdir->kobj.kset = dir;
+	err = kobject_add(&subdir->kobj, &dir->kobj, "%s", "link");
 	if (err != 0)
 	{
 		PRINT_ERR(err);
