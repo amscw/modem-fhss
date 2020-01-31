@@ -1,7 +1,0 @@
-KEYSENDER_DAEMON_VERSION = 1.0
-KEYSENDER_DAEMON_SITE = /home/alex-m/projects/modem-fhss/PS/apps/keysender-daemon
-KEYSENDER_DAEMON_SITE_METHOD = local
-KEYSENDER_DAEMON_INSTALL_STAGING = NO
-KEYSENDER_DAEMON_INSTALL_TARGET = YES
-
-$(eval $(cmake-package))

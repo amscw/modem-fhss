@@ -1,0 +1,5 @@
+config BR2_PACKAGE_KS_DAEMON
+	bool "ks-daemon"
+	default y
+	help
+	  keysender-daemon component

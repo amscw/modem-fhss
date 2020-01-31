@@ -1,0 +1,22 @@
+# Конфигурация демона key-sender
+
+# общие настройки
+common:
+    ifname: 'mfhss0'
+    ipaddr: '192.168.1.3'
+    login: 'root'
+    password: 'root'
+    srcfile: '/home/alex-m/keys'
+    dstdir: '/mnt/configs/'
+	
+#ping настройки
+ping:
+    ifname: 'br0'
+    timeout: 2	# с, время ожидания отклика
+    count: 3	# шт, количество запросов
+
+# ssh настройки
+sshpass:
+    timeout: 2	# с, время ожидания соединения
+
+
