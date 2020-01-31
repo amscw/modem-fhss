@@ -33,9 +33,9 @@
 #define REG_MLIP_RST_ADDRESS	0x0028
 #define REG_MLIP_CE_NAME		"ce"
 #define REG_MLIP_CE_ADDRESS		0x002C
-#define REG_LINK_SR_NAME		"link" 
+#define REG_LINK_SR_NAME		"sr" 
 #define REG_LINK_SR_ADDRESS		0x0030
-#define REG_LINK_IR_NAME		"link"
+#define REG_LINK_IR_NAME		"ir"
 #define REG_LINK_IR_ADDRESS		0x0034
 
 //-------------------------------------------------------------------------------------------------

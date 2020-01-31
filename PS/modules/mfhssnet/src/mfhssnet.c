@@ -189,7 +189,7 @@ static char *macaddr_to_str(u8 macaddr[ETH_ALEN])
 	static int index = 0;
 	char *str = &mactable[index][0];
 
-	sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x:", macaddr[0], macaddr[1], macaddr[2], macaddr[3], macaddr[4], macaddr[5]);
+	sprintf(str, "%02x:%02x:%02x:%02x:%02x:%02x", macaddr[0], macaddr[1], macaddr[2], macaddr[3], macaddr[4], macaddr[5]);
 
 	if (++index == sizeof mactable / sizeof *mactable)
 		index = 0;
