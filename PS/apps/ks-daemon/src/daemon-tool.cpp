@@ -238,7 +238,6 @@ int daemonTool_c::Run()
 			// waiting connection to slave
 			ping = std::make_unique<ping_c>(
 					cfg.ping.ifname,
-					cfg.cmn.ifname,
 					cfg.cmn.ipaddr,
 					cfg.ping.count,
 					cfg.ping.timeout);
