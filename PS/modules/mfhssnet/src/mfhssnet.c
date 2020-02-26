@@ -29,7 +29,7 @@ MODULE_AUTHOR("amscw");			// https://github.com/amscw
 // Default timeout period
 #define MFHSS_TX_TIMEOUT_MS	2000	 // In ms
 // #define MFHSS_DBG_INTERRUPTS
-
+// #define MFHSS_DBG_SHOW_PKT_DUMP
 #define PRINT_DSTR_STG(from) PDEBUG("stage%i:%s...\n", from, destroy_stage_strings[from])
 #define PRINT_CLOSE_STG(from) PDEBUG("stage%i:%s...\n", from, close_stage_strings[from])
 // WARNING: требуется контекст с priv
@@ -340,7 +340,9 @@ inline static void __rx_pkt(struct net_device *dev)
 			priv->stats->rx_dropped++;
 		} else {
 			PDEBUG("received new packet at %s (%d bytes)\n", dev->name, pkt->datalen);
-			// __print_dump_pkt(pkt);
+#ifdef MFHSS_DBG_SHOW_PKT_DUMP
+			__print_dump_pkt(pkt);
+#endif // MFHSS_DBG_SHOW_PKT_DUMP
 			skb_reserve(skb, 2);
 			memcpy(skb_put(skb, pkt->datalen), pkt->data, pkt->datalen);
 			skb->ip_summed = CHECKSUM_UNNECESSARY;
@@ -628,7 +630,9 @@ static int mfhss_tx_pkt(struct sk_buff *skb, struct net_device *dev)
 		data = shortpkt;
 	}
 
-	// __print_dump(data, len);
+#ifdef MFHSS_DBG_SHOW_PKT_DUMP	
+	__print_dump(data, len);
+#endif // MFHSS_DBG_SHOW_PKT_DUMP
 
 	eth = (struct ethhdr *)(data);
 	ip = (struct iphdr *)(data + sizeof(struct ethhdr));
