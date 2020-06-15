@@ -22,7 +22,7 @@ daemonTool_c::daemonTool_c(const std::string &filename) : cfgFilename(filename),
 	switch (pid)
 	{
 	case -1:
-		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_FORK, __FILE__, __FUNCTION__);
+		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_FORK, __FILENAME__, __FUNCTION__);
 
 	case 0:
 		// child
@@ -60,7 +60,7 @@ int daemonTool_c::exec(std::unique_ptr<daemon_c> daemon)
 		}
 		// normally unreachable here. If not - throw exc
 		oss << "error: " << err;
-		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_EXEC_RUN, __FILE__, __FUNCTION__, oss.str());
+		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_EXEC_RUN, __FILENAME__, __FUNCTION__, oss.str());
 	} else {
 		// parent process
 		wait(&wstatus);
@@ -73,7 +73,7 @@ int daemonTool_c::exec(std::unique_ptr<daemon_c> daemon)
 	}
 
 	if (!WIFEXITED(wstatus))
-		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_EXEC_FAIL, __FILE__, __FUNCTION__);
+		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_EXEC_FAIL, __FILENAME__, __FUNCTION__);
 
 	return static_cast<int>(std::int8_t(WEXITSTATUS(wstatus)));
 }
@@ -84,7 +84,7 @@ void daemonTool_c::savePIDToFile(const std::string &filename)
 
 	ofs.open(filename, std::ios::out);
 	if (!ofs.is_open())
-		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_OPEN, __FILE__, __FUNCTION__, filename);
+		throw daemonToolExc_c(daemonToolExc_c::errCode_t::ERROR_OPEN, __FILENAME__, __FUNCTION__, filename);
 
 	ofs << getpid();
 	ofs.close();
@@ -116,6 +116,21 @@ void daemonTool_c::loadConfigsFromFile(const std::string &filename)
 	}
 }
 
+/**
+ * Создаёт демона, и процесс ответвляется в дочерний в конструкторе демона.
+ *
+ * В вызове exec():
+ *
+ * Дочерний процесс исполняет загруженную в демона командную строку.
+ * Если исполнение невозможно, происходит бросок исключения ERROR_EXEC_RUN, которое обрабатывается в Run() дочернего процесса,
+ * и дочерний процесс завершает работу с кодом -33.
+ *
+ * Родительский процесс блокируетя в exec(), ожидая завершения дочернего.
+ * Если дочерний процесс не вернул 0, происходит бросок исключения ERROR_EXEC_FAIL, которое перехватывается в Run() родительского процесса, 
+ * и родительский процесс завершает работу с кодом -1.
+ *
+ * Если дочерний процесс вернул 0, происходит возврат из exec() и создается следующий демон и т.д.
+ */
 int daemonTool_c::Run()
 {
 	std::ostringstream oss;
