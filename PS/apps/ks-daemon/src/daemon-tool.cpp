@@ -224,26 +224,6 @@ int daemonTool_c::Run()
 
 		try
 		{
-			// !!! for test only !!!
-			oss << "try to run fake daemon...";
-			logger->Write(oss);
-			fake = std::make_unique<fakeDaemon_c>("any_param");
-			err = exec(std::move(fake));
-#if defined (DBG_PROCESS_TRACE)
-			oss << "fake exit code: " << err << ", destroyed: " << std::boolalpha << !static_cast<bool>(fake);
-			logger->Write(oss);
-#endif
-			// process child's exit code
-			if (err == -33) {
-				oss << "no such program. Exit";
-				logger->Write(oss);
-				exit (-1);
-			} else if (err != 0) {
-				// try again...
-				continue;
-			}
-			// !!! end of test !!!
-
 			// wait for linkup
 			if (!hw->IsOnline())
 				continue;
@@ -263,9 +243,12 @@ int daemonTool_c::Run()
 #endif
 			if (err == 0)
 			{
-				oss << "ping ok! try ssh...";
+				oss << "ping ok! creating keys...";
 				logger->Write(oss);
 			} else continue;
+
+			// create the new keys
+			
 
 			// attempt to pass the keys to slave
 			sshpass = std::make_unique<sshpass_c>(
