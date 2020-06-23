@@ -22,4 +22,8 @@ struct exc_c /* : public std::exception */
 	virtual void Perror() const noexcept { perror(m_strFunction.c_str()); }
 };
 
+#define THROW_EXC(type, code) throw type(code, __FILENAME__, __FUNCTION__)
+#define THROW_EXC_MSG(type, code, msg) throw type(code, __FILENAME__, __FUNCTION__, msg)
+
+
 #endif // EXC_H

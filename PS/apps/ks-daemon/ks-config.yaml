@@ -3,10 +3,10 @@
 # общие настройки
 common:
     ifname: 'mfhss0'
-    ipaddr: '192.168.1.3' # кого пингует
+    ipaddr: '192.168.1.11' # кого пингует
     login: 'root'
     password: 'root'
-    srcfile: '/root/keys'  # файл с ключами
+    srcfile: 'keys'  # файл с ключами
     dstdir: '/mnt/configs/' # куда кидать по ssh
 	
 #ping настройки

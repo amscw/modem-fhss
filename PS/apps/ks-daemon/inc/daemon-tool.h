@@ -15,6 +15,7 @@
 #include "exc.h"
 #include "daemon.h"
 #include "hw.h"
+#include "keygen.hpp"
 
 struct daemonToolExc_c : public exc_c
 {
@@ -53,10 +54,15 @@ struct daemonToolExc_c : public exc_c
 
 class daemonTool_c
 {
+	// Logger
 	std::unique_ptr<logger_c>logger = nullptr;
+	
+	// Daemons
 	std::unique_ptr<daemon_c> sshpass = nullptr;
 	std::unique_ptr<ping_c> ping = nullptr;
 	std::unique_ptr<fakeDaemon_c> fake = nullptr;
+	
+	// Hardware abstraction layer
 	std::unique_ptr<hw_c> hw = nullptr;
 
 	const std::string pidFilename{"pid"};

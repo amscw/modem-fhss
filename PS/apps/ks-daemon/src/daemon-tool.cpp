@@ -1,4 +1,6 @@
 #include "daemon-tool.h"
+#include <vector>
+
 
 std::string daemonToolExc_c::strErrorMessages[] = {
 		"can't open file",
@@ -248,7 +250,24 @@ int daemonTool_c::Run()
 			} else continue;
 
 			// create the new keys
-			
+			typedef std::unique_ptr<Keygen_Basic> item_type;
+			std::vector<item_type> v;
+			v.emplace_back(std::make_unique<CIKey>());
+			v.emplace_back(std::make_unique<SAPKey>());
+			v.emplace_back(std::make_unique<SAPIntrKey>());
+			v.emplace_back(std::make_unique<DLinkCoderKey>());
+			v.emplace_back(std::make_unique<HopSeedKey>());
+			v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
+
+			// save keys to file
+			for (std::vector<item_type>::iterator it = v.begin(); it != v.end(); it++)
+			{
+				(*it)->Generate();
+				(*it)->WriteTo("keys");
+			}
+
+			oss << "keys created! Try ssh...";
+			logger->Write(oss);
 
 			// attempt to pass the keys to slave
 			sshpass = std::make_unique<sshpass_c>(
@@ -267,7 +286,10 @@ int daemonTool_c::Run()
 				oss << "keys fired! Exit";
 				logger->Write(oss);
 				break;
-			} else continue;
+			} else {
+				remove("keys");
+				continue;
+			}
 		} catch (exc_c &exc) {
 			logger->Write(exc.ToString());
 
