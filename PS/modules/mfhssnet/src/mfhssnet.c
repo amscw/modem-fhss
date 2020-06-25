@@ -28,7 +28,7 @@ MODULE_AUTHOR("amscw");			// https://github.com/amscw
 #define MFHSSNET_DMA_SIZE	2048
 // Default timeout period
 #define MFHSS_TX_TIMEOUT_MS	2000	 // In ms
-// #define MFHSS_DBG_INTERRUPTS
+#define MFHSS_DBG_INTERRUPTS
 // #define MFHSS_DBG_SHOW_PKT_DUMP
 #define PRINT_DSTR_STG(from) PDEBUG("stage%i:%s...\n", from, destroy_stage_strings[from])
 #define PRINT_CLOSE_STG(from) PDEBUG("stage%i:%s...\n", from, close_stage_strings[from])
