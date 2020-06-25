@@ -15,6 +15,7 @@ struct hwExc_c : public exc_c
 	enum class errCode_t : std::uint32_t {
 		ERROR_OPEN,
 		ERROR_IOCTL,
+		ERROR_OPEN_REG,
 	} m_errCode;
 
 	hwExc_c(enum errCode_t code, const std::string &strFile, const std::string &strFunction, const std::string &strErrorDescription = "") noexcept :
@@ -52,6 +53,8 @@ public:
 	~hw_c();
 
 	bool IsOnline();
+	bool IsMaster();
+	void SetMaster(bool isMaster);
 };
 
 #endif // _HW

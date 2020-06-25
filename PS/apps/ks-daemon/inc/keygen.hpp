@@ -21,6 +21,7 @@ struct keyGenExc_c : public exc_c
 		ERROR_OPEN_FILE,
 		ERROR_PARSE_KEY,
 		ERROR_NOTFOUND_KEY,
+		ERROR_WRITE_TO_HW,
 	} m_errCode;
 
 	keyGenExc_c(enum errCode_t code, const std::string &strFile, const std::string &strFunction, const std::string &strErrorDescription = "") noexcept :
@@ -57,7 +58,7 @@ public:
 	virtual void WriteTo(const std::string &filename) = 0;
 	virtual void ReadFrom(const std::string &filename) = 0;
 	virtual void Print() noexcept = 0;
-	// virtual void WriteToHW();
+	virtual void WriteToHW() = 0;
 	virtual ~Keygen_Basic(){}
 };
 
@@ -141,6 +142,26 @@ public:
 	{
 		std::cout << regname << ":" << std::hex << key << std::endl;
 		std::cout << std::dec;
+	}
+
+	void WriteToHW() 
+	{
+		std::ofstream ofs;
+
+		ofs.exceptions(std::ios_base::failbit);
+
+		try
+		{
+			ofs.open("/sys/mfhss-dynamic/" + regname);
+		} catch (const std::ofstream::failure& e) {
+			THROW_EXC_MSG(keyGenExc_c, keyGenExc_c::errCode_t::ERROR_OPEN_FILE, e.what());
+		}
+		if (ofs.is_open()) {
+			ofs << key;
+			ofs.close();
+		} else {
+			THROW_EXC(keyGenExc_c, keyGenExc_c::errCode_t::ERROR_OPEN_FILE);
+		}
 	}
 
 protected:
@@ -259,6 +280,30 @@ public:
 		std::cout << std::dec;
 	}
 
+	void WriteToHW()
+	{
+		std::ofstream ofs_lsb, ofs_msb;
+
+		ofs_lsb.exceptions(std::ios_base::failbit);
+		ofs_msb.exceptions(std::ios_base::failbit);	
+
+		try
+		{
+			ofs_lsb.open("/sys/mfhss-dynamic/" + regname + "lsb");
+			ofs_msb.open("/sys/mfhss-dynamic/" + regname + "msb");
+		} catch (const std::ofstream::failure& e) {
+			THROW_EXC_MSG(keyGenExc_c, keyGenExc_c::errCode_t::ERROR_OPEN_FILE, e.what());
+		}
+		if (ofs_lsb.is_open() && ofs_msb.is_open()) {
+			ofs_lsb << key.words.L;
+			ofs_msb << key.words.H;
+			ofs_lsb.close();
+			ofs_msb.close();
+		} else {
+			THROW_EXC(keyGenExc_c, keyGenExc_c::errCode_t::ERROR_OPEN_FILE);
+		}
+	}
+
 protected:
 	const std::string regname;
 	key_t key;
@@ -275,6 +320,7 @@ public:
 	void WriteTo(const std::string &filename) override;
 	void ReadFrom(const std::string &filename) override;
 	void Print() noexcept override;
+	void WriteToHW() override;
 };
 
 class SAPKey : Keygen<std::uint16_t>, public Keygen_Basic
@@ -285,6 +331,7 @@ public:
 	void WriteTo(const std::string &filename) override;
 	void ReadFrom(const std::string &filename) override;
 	void Print() noexcept override;
+	void WriteToHW() override;
 };
 
 class SAPIntrKey : Keygen<std::uint32_t>, public Keygen_Basic
@@ -295,6 +342,7 @@ public:
 	void WriteTo(const std::string &filename) override;
 	void ReadFrom(const std::string &filename) override;
 	void Print() noexcept override;
+	void WriteToHW() override;
 };
 
 class DLinkCoderKey : Keygen<std::uint16_t>, public Keygen_Basic
@@ -305,6 +353,7 @@ public:
 	void WriteTo(const std::string &filename) override;
 	void ReadFrom(const std::string &filename) override;
 	void Print() noexcept override;
+	void WriteToHW() override;
 };
 
 class HopSeedKey : Keygen<std::uint32_t>, public Keygen_Basic
@@ -315,6 +364,7 @@ public:
 	void WriteTo(const std::string &filename) override;
 	void ReadFrom(const std::string &filename) override;
 	void Print() noexcept override;
+	void WriteToHW() override;
 };
 
 class DLinkDataPreampbleKey : Keygen<std::uint32_t[2]>, public Keygen_Basic
@@ -363,5 +413,6 @@ public:
 	void WriteTo(const std::string &filename) override;
 	void ReadFrom(const std::string &filename) override;
 	void Print() noexcept override;
+	void WriteToHW() override;
 };
 #endif /* KEYGEN_HPP_ */

@@ -24,6 +24,7 @@ struct daemonToolExc_c : public exc_c
 		ERROR_FORK,
 		ERROR_EXEC_RUN,
 		ERROR_EXEC_FAIL,
+		ERROR_SAVE_FILE,
 	} m_errCode;
 
 	daemonToolExc_c(enum errCode_t code, const std::string &strFile, const std::string &strFunction, const std::string &strErrorDescription = "") noexcept :
@@ -81,6 +82,7 @@ class daemonTool_c
 			std::string password;
 			std::string srcfile;
 			std::string dstdir;
+			bool isMaster;
 		} cmn;
 		struct {
 			std::string ifname;
@@ -97,11 +99,13 @@ public:
 	daemonTool_c(const std::string &filename);
 	inline bool IsChild() const noexcept {return (pid == 0); }
 	int Run();
+	void LoadConfigsFromFile(const std::string &filename);
+
+	const std::string& Keydir() const noexcept { return cfg.cmn.dstdir; }
 
 private:
 	int exec(std::unique_ptr<daemon_c> daemon);
 	void savePIDToFile(const std::string &filename);
-	void loadConfigsFromFile(const std::string &filename);
 };
 
 #endif // _DAEMON_TOOL

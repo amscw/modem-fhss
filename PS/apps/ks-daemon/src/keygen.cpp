@@ -13,7 +13,8 @@
 std::string keyGenExc_c::strErrorMessages[] = {
 		"can't open file",
 		"can't parse key",
-		"can't found key"
+		"can't found key",
+		"can't write to HW"
 };
 
 //-----------------------------------------------------------------------------
@@ -52,6 +53,11 @@ void CIKey::Print() noexcept
 {
 	Keygen<std::uint32_t[2]>::Print();
 }
+
+void CIKey::WriteToHW()
+{
+	Keygen<std::uint32_t[2]>::WriteToHW();	
+}
 //-----------------------------------------------------------------------------
 // ADDR_REG_SAP_KEY_SAP
 //-----------------------------------------------------------------------------
@@ -86,6 +92,12 @@ void SAPKey::Print() noexcept
 {
 	Keygen<key_t>::Print();
 }
+
+void SAPKey::WriteToHW()
+{
+	Keygen<key_t>::WriteToHW();	
+}
+
 //-----------------------------------------------------------------------------
 // ADDR_REG_SAP_KEY_INTR
 //-----------------------------------------------------------------------------
@@ -146,6 +158,12 @@ void SAPIntrKey::Print() noexcept
 {
 	Keygen<key_t>::Print();
 }
+
+void SAPIntrKey::WriteToHW()
+{
+	Keygen<key_t>::WriteToHW();	
+}
+
 //-----------------------------------------------------------------------------
 // ADDR_REG_DLINK_CODER_KEY
 //-----------------------------------------------------------------------------
@@ -180,6 +198,12 @@ void DLinkCoderKey::Print() noexcept
 {
 	Keygen<key_t>::Print();
 }
+
+void DLinkCoderKey::WriteToHW()
+{
+	Keygen<key_t>::WriteToHW();	
+}
+
 //-----------------------------------------------------------------------------
 // ADDR_REG_HOP_SEED
 //-----------------------------------------------------------------------------
@@ -214,10 +238,16 @@ void HopSeedKey::Print() noexcept
 {
 	Keygen<key_t>::Print();
 }
+
+void HopSeedKey::WriteToHW()
+{
+	Keygen<key_t>::WriteToHW();	
+}
+
 //-----------------------------------------------------------------------------
 // ADDR_REG_DLINK_DATA_PREAMPLE_
 //-----------------------------------------------------------------------------
-DLinkDataPreampbleKey::DLinkDataPreampbleKey() : Keygen("dlink/data_preampble_") {}
+DLinkDataPreampbleKey::DLinkDataPreampbleKey() : Keygen("dlink/data_preample_") {}
 
 void DLinkDataPreampbleKey::Generate() noexcept
 {
@@ -251,4 +281,9 @@ void DLinkDataPreampbleKey::ReadFrom(const std::string &filename)
 void DLinkDataPreampbleKey::Print() noexcept
 {
 	Keygen<std::uint32_t[2]>::Print();
+}
+
+void DLinkDataPreampbleKey::WriteToHW()
+{
+	Keygen<std::uint32_t[2]>::WriteToHW();	
 }

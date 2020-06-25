@@ -4,10 +4,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <fstream>
 
 std::string hwExc_c::strErrorMessages[] = {
 	"can't open socket",
 	"can't perform ioctl request",
+	"can't open reg"
 };
 
 hw_c::hw_c(const std::string &ifn) : fd (socket(AF_INET, SOCK_DGRAM, 0)), ifname(ifn)
@@ -45,3 +47,46 @@ bool hw_c::IsOnline()
 	}
 	return (flags.bits.link_on == 1);
 }
+
+bool hw_c::IsMaster()
+{
+	std::ifstream ifs;
+	bool isMaster = false;
+
+	// ifs.exceptions(std::ios_base::failbit);
+	
+	try
+	{
+		ifs.open("/sys/mfhss-dynamic/m/master");
+	} catch (const std::ifstream::failure &e) {
+		THROW_EXC_MSG(hwExc_c, hwExc_c::errCode_t::ERROR_OPEN_REG, e.what());
+	}
+	if (ifs.is_open()) {
+		ifs >> isMaster;
+		ifs.close();
+	} else { // ifs.is_open()
+		THROW_EXC(hwExc_c, hwExc_c::errCode_t::ERROR_OPEN_REG);
+	}
+
+	return isMaster;	
+}
+
+void hw_c::SetMaster(bool isMaster)
+{
+	std::ofstream ofs;
+
+	ofs.exceptions(std::ios_base::failbit);
+
+	try {
+		ofs.open("/sys/mfhss-dynamic/m/master");
+	} catch (const std::ofstream::failure& e) {
+		THROW_EXC_MSG(hwExc_c, hwExc_c::errCode_t::ERROR_OPEN_REG, e.what());
+	}
+	if (ofs.is_open()) {
+		ofs << static_cast<int>(isMaster);
+		ofs.close();
+	} else {
+		THROW_EXC(hwExc_c, hwExc_c::errCode_t::ERROR_OPEN_REG);
+	}
+}
+

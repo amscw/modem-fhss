@@ -1,5 +1,6 @@
 #include "daemon-tool.h"
 #include <vector>
+#include <experimental/filesystem>
 
 
 std::string daemonToolExc_c::strErrorMessages[] = {
@@ -7,6 +8,7 @@ std::string daemonToolExc_c::strErrorMessages[] = {
 		"can't fork to new process",
 		"can't exec new process",
 		"exec process fail",
+		"can't save file",
 };
 
 daemonTool_c::daemonTool_c(const std::string &filename) : cfgFilename(filename), pid(-1)
@@ -15,7 +17,7 @@ daemonTool_c::daemonTool_c(const std::string &filename) : cfgFilename(filename),
 
 	try
 	{
-		logger = std::make_unique<logger_c>("daemon.log");
+		logger = std::make_unique<logger_c>("/var/log/ks-daemon.log");
 	} catch (exc_c &exc) {
 		throw ;
 	}
@@ -92,7 +94,7 @@ void daemonTool_c::savePIDToFile(const std::string &filename)
 	ofs.close();
 }
 
-void daemonTool_c::loadConfigsFromFile(const std::string &filename)
+void daemonTool_c::LoadConfigsFromFile(const std::string &filename)
 {
 	try
 	{
@@ -105,6 +107,7 @@ void daemonTool_c::loadConfigsFromFile(const std::string &filename)
 		cfg.cmn.password = cfgparser["common"]["password"].as<std::string>();
 		cfg.cmn.srcfile = cfgparser["common"]["srcfile"].as<std::string>();
 		cfg.cmn.dstdir = cfgparser["common"]["dstdir"].as<std::string>();
+		cfg.cmn.isMaster = cfgparser["common"]["master"].as<bool>();
 
 		// ping settings
 		cfg.ping.ifname = cfgparser["ping"]["ifname"].as<std::string>();
@@ -117,6 +120,7 @@ void daemonTool_c::loadConfigsFromFile(const std::string &filename)
 		throw;
 	}
 }
+
 
 /**
  * Создаёт демона, и процесс ответвляется в дочерний в конструкторе демона.
@@ -162,7 +166,7 @@ int daemonTool_c::Run()
 
 	// load configuration
 	try {
-		loadConfigsFromFile(cfgFilename);
+		LoadConfigsFromFile(cfgFilename);
 	} catch (YAML::ParserException &exc) {
 		logger->Write(exc.msg);
 		exit(-1);
@@ -173,6 +177,13 @@ int daemonTool_c::Run()
 	// create hw level
 	try {
 		hw = std::make_unique<hw_c>(this->cfg.cmn.ifname);
+		hw->SetMaster(cfg.cmn.isMaster);
+		if (!hw->IsMaster())
+		{
+			oss << "hardware is slave. Exit";
+			logger->Write(oss);
+			exit(0);
+		}
 	} catch (exc_c &exc) {
 		logger->Write(exc.ToString());
 		exit(-1);
@@ -273,7 +284,7 @@ int daemonTool_c::Run()
 			sshpass = std::make_unique<sshpass_c>(
 					cfg.cmn.ipaddr,
 					sshpass_c::login_t(cfg.cmn.login, cfg.cmn.password),
-					cfg.cmn.srcfile,
+					/*cfg.cmn.srcfile*/"keys",
 					cfg.cmn.dstdir,
 					cfg.sshp.timeout);
 			err = exec(std::move(sshpass));
@@ -283,13 +294,33 @@ int daemonTool_c::Run()
 #endif
 			if (err == 0)
 			{
-				oss << "keys fired! Exit";
+				oss << "keys fired! Saving...";
 				logger->Write(oss);
-				break;
+
+				std::unique_ptr<char[]> buf = std::make_unique<char[]>(256);
+				std::ifstream ifs("keys", std::ios_base::in | std::ios_base::binary);
+				std::ofstream ofs(cfg.cmn.dstdir + "keys", std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+				
+				if (ifs.is_open() && ofs.is_open())
+				{
+					do {
+						ifs.read(buf.get(), 256);
+						ofs.write(buf.get(), ifs.gcount());
+					} while (ifs.gcount() > 0);
+					ifs.close();
+					ofs.close();
+				} else {
+					oss << "can't save keys to file";
+					logger->Write(oss);
+				}
+				remove("keys");
 			} else {
 				remove("keys");
 				continue;
 			}
+			oss << "keys updated! Exit";
+			logger->Write(oss);
+			break;
 		} catch (exc_c &exc) {
 			logger->Write(exc.ToString());
 

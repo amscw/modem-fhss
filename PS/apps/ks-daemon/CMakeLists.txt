@@ -2,7 +2,7 @@ cmake_minimum_required( VERSION 3.3.2 )
 project(ks-daemon)
 
 # Ключи компиляции
-add_compile_options(-std=c++14 -Wall)
+add_compile_options(-std=c++17 -Wall)
 
 # Сборка исполняемого файла приложения
 add_subdirectory(src)
