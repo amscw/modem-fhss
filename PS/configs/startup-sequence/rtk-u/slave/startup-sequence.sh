@@ -102,7 +102,7 @@ if [ -d /sys/mfhss-dynamic ]; then
 	#echo 1 >> 			/sys/mfhss-dynamic/hop/seed
 	#echo 1 >> 			/sys/mfhss-dynamic/dlink/coder_seed
 	#echo 1 >> 			/sys/mfhss-dynamic/sap/key_sap
-	echo 19088743 >> 	/sys/mfhss-dynamic/sap/key_intr
+	#echo 19088743 >> 	/sys/mfhss-dynamic/sap/key_intr
 	#echo 123 >> 		/sys/mfhss-dynamic/ci/key_lsb	
 	#echo 456 >> 		/sys/mfhss-dynamic/ci/key_msb
 	# Настройка CI
