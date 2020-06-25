@@ -35,7 +35,7 @@ case "$1" in
 		ad9361
 		sh /root/capture-daemon start
 		# sh /root/modem-daemon start
-		
+		ks-daemon /etc/ks-config.yaml
 		# modem startup sequence
 		if [ -f /mnt/configs/startup-sequence.sh ]; then
 			sh /mnt/configs/startup-sequence.sh
