@@ -147,13 +147,17 @@ void SAPIntrKey::Generate() noexcept
 	std::random_device rd;
 	std::uint8_t items[] = {0, 1, 2, 3, 4, 5, 6, 7};
 
+	// перетасовка Фишера-Йетса
 	for (int i = sizeof items - 1; i > 0 ; i--)
 	{
 		distr_t d(0, i);
 		std::uint32_t j = d(rd);
 		std::swap(items[j], items[i]);
-		key |= (items[i] << (i*4));
 	}
+
+	// записать перетасованные индексы в ключ
+	for (int i = 0; i < sizeof items; i++)
+		key |= (items[i] << (i*4));
 	
 }
 
