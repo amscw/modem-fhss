@@ -108,6 +108,7 @@ void daemonTool_c::LoadConfigsFromFile(const std::string &filename)
 		cfg.cmn.srcfile = cfgparser["common"]["srcfile"].as<std::string>();
 		cfg.cmn.dstdir = cfgparser["common"]["dstdir"].as<std::string>();
 		cfg.cmn.isMaster = cfgparser["common"]["master"].as<bool>();
+		cfg.cmn.modem_type = cfgparser["common"]["modem_type"].as<std::string>();
 
 		// ping settings
 		cfg.ping.ifname = cfgparser["ping"]["ifname"].as<std::string>();
@@ -263,13 +264,28 @@ int daemonTool_c::Run()
 			// create the new keys
 			typedef std::unique_ptr<Keygen_Basic> item_type;
 			std::vector<item_type> v;
-			v.emplace_back(std::make_unique<CIKey>());
-			v.emplace_back(std::make_unique<SAPKey>());
-			v.emplace_back(std::make_unique<SAPIntrKey>());
-			v.emplace_back(std::make_unique<DLinkCoderKey>());
-			v.emplace_back(std::make_unique<HopSeedKey>());
-			v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
 
+			if (cfg.cmn.modem_type.compare("rtk_u") == 0)
+			{
+				// РТК-У
+				v.emplace_back(std::make_unique<CIKey>());
+				v.emplace_back(std::make_unique<SAPKey>());
+				v.emplace_back(std::make_unique<SAPIntrKey>());
+				v.emplace_back(std::make_unique<DLinkCoderKey>());
+				v.emplace_back(std::make_unique<HopSeedKey>());
+				v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
+			} else if (cfg.cmn.modem_type.compare("rtk_v") == 0) {
+				// РТК-В
+				v.emplace_back(std::make_unique<CIKey>());
+				v.emplace_back(std::make_unique<SAPKey>());
+				v.emplace_back(std::make_unique<SAPIntrKey>());
+				v.emplace_back(std::make_unique<DLinkCommonKey>());
+				v.emplace_back(std::make_unique<PhyCommonKey>());
+			} else {
+				oss << "bad modem type (" << cfg.cmn.modem_type << "). Exit";
+				logger->Write(oss);
+				exit(-1);
+			}
 			// save keys to file
 			for (std::vector<item_type>::iterator it = v.begin(); it != v.end(); it++)
 			{

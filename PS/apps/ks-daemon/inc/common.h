@@ -4,7 +4,7 @@
 #include "tracers.h"
 
 //#define DBG_DAEMON_ARGS
-#define DBG_PROCESS_TRACE
-#define DBG_SIGNALS
+//#define DBG_PROCESS_TRACE
+//#define DBG_SIGNALS
 
 #endif // _COMMON_H

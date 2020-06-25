@@ -415,4 +415,27 @@ public:
 	void Print() noexcept override;
 	void WriteToHW() override;
 };
+
+class DLinkCommonKey : Keygen<std::uint16_t>, public Keygen_Basic
+{
+public:
+	DLinkCommonKey();
+	void Generate() noexcept override;
+	void WriteTo(const std::string &filename) override;
+	void ReadFrom(const std::string &filename) override;
+	void Print() noexcept override;
+	void WriteToHW() override;	
+};
+
+class PhyCommonKey : Keygen<std::uint16_t>, public Keygen_Basic
+{
+public:
+	PhyCommonKey();
+	void Generate() noexcept override;
+	void WriteTo(const std::string &filename) override;
+	void ReadFrom(const std::string &filename) override;
+	void Print() noexcept override;
+	void WriteToHW() override;	
+};
+
 #endif /* KEYGEN_HPP_ */

@@ -3,12 +3,13 @@
 # общие настройки
 common:
     ifname: 'mfhss0'
-    ipaddr: '192.168.1.13' # кого пингует
+    ipaddr: '192.168.1.12' # кого пингует
     login: 'root'
     password: 'root'
     srcfile: 'keys'  # файл с ключами
     dstdir: '/mnt/configs/' # куда кидать по ssh
-    master: true
+    master: false
+    modem_type: 'rtk_v'
 
 #ping настройки
 ping:

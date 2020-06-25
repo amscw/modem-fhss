@@ -108,32 +108,53 @@ SAPIntrKey::SAPIntrKey() : Keygen("sap/key_intr") {}
  * по 4 бита на индекс, всего 8 индексов без повторения
  * (пример - 0x12345678)
  */
+// void SAPIntrKey::Generate() noexcept
+// {
+// 	std::uniform_int_distribution<std::uint32_t> d(0, 0xF);
+// 	std::random_device rd;
+// 	std::uint8_t indexes[8], next_index;
+
+// 	memset(indexes, 0, sizeof indexes);
+
+// 	for (int i = 0; i < 8; )
+// 	{
+// 		bool isExist = false;
+
+// 		next_index = d(rd);
+// 		for (int j = 0; j < i; j++)
+// 			if (next_index == indexes[j])
+// 			{
+// 				isExist = true;
+// 				break;
+// 			}
+// 		if (isExist)
+// 			continue;
+
+// 		key |= (next_index << (i*4));
+// 		indexes[i] = next_index;
+// 		i++;
+// 	}
+// }
+
+/**
+ * Ключ для перемежителя уровня защиты информации по 4 бита на индекс
+ * (индекс от 0 до 7), всего 8 индексов без повторения
+ * (пример - 0x01234567)
+ */
 void SAPIntrKey::Generate() noexcept
 {
-	std::uniform_int_distribution<std::uint32_t> d(0, 0xF);
+	using distr_t = std::uniform_int_distribution<std::uint32_t>;
 	std::random_device rd;
-	std::uint8_t indexes[8], next_index;
+	std::uint8_t items[] = {0, 1, 2, 3, 4, 5, 6, 7};
 
-	memset(indexes, 0, sizeof indexes);
-
-	for (int i = 0; i < 8; )
+	for (int i = sizeof items - 1; i > 0 ; i--)
 	{
-		bool isExist = false;
-
-		next_index = d(rd);
-		for (int j = 0; j < i; j++)
-			if (next_index == indexes[j])
-			{
-				isExist = true;
-				break;
-			}
-		if (isExist)
-			continue;
-
-		key |= (next_index << (i*4));
-		indexes[i] = next_index;
-		i++;
+		distr_t d(0, i);
+		std::uint32_t j = d(rd);
+		std::swap(items[j], items[i]);
+		key |= (items[i] << (i*4));
 	}
+	
 }
 
 void SAPIntrKey::WriteTo(const std::string &filename)
@@ -286,4 +307,84 @@ void DLinkDataPreampbleKey::Print() noexcept
 void DLinkDataPreampbleKey::WriteToHW()
 {
 	Keygen<std::uint32_t[2]>::WriteToHW();	
+}
+
+//-----------------------------------------------------------------------------
+// ADDR_REG_DLINK_KEY_COMMON
+//-----------------------------------------------------------------------------
+DLinkCommonKey::DLinkCommonKey() : Keygen ("dlink/key_common") {}
+
+void DLinkCommonKey::Generate() noexcept
+{
+	std::uniform_int_distribution<key_t> d(0, 0xFFF);
+	std::random_device rd;
+	key = d(rd);
+}
+
+void DLinkCommonKey::WriteTo(const std::string &filename)
+{
+	try {
+		Keygen<key_t>::WriteTo(filename);
+	} catch (exc_c &exc) {
+		throw ;
+	}
+}
+
+void DLinkCommonKey::ReadFrom(const std::string &filename)
+{
+	try {
+		Keygen<key_t>::ReadFrom(filename);
+	} catch (exc_c &exc) {
+		throw ;
+	}
+}
+
+void DLinkCommonKey::Print() noexcept
+{
+	Keygen<key_t>::Print();
+}
+
+void DLinkCommonKey::WriteToHW()
+{
+	Keygen<key_t>::WriteToHW();	
+}
+
+//-----------------------------------------------------------------------------
+// ADDR_REG_PHY_KEY_COMMON
+//-----------------------------------------------------------------------------
+PhyCommonKey::PhyCommonKey() : Keygen ("phy/key_common") {}
+
+void PhyCommonKey::Generate() noexcept
+{
+	std::uniform_int_distribution<key_t> d(0, 0x7FF);
+	std::random_device rd;
+	key = d(rd);
+}
+
+void PhyCommonKey::WriteTo(const std::string &filename)
+{
+	try {
+		Keygen<key_t>::WriteTo(filename);
+	} catch (exc_c &exc) {
+		throw ;
+	}
+}
+
+void PhyCommonKey::ReadFrom(const std::string &filename)
+{
+	try {
+		Keygen<key_t>::ReadFrom(filename);
+	} catch (exc_c &exc) {
+		throw ;
+	}
+}
+
+void PhyCommonKey::Print() noexcept
+{
+	Keygen<key_t>::Print();
+}
+
+void PhyCommonKey::WriteToHW()
+{
+	Keygen<key_t>::WriteToHW();	
 }

@@ -83,6 +83,7 @@ class daemonTool_c
 			std::string srcfile;
 			std::string dstdir;
 			bool isMaster;
+			std::string modem_type;
 		} cmn;
 		struct {
 			std::string ifname;
@@ -101,7 +102,8 @@ public:
 	int Run();
 	void LoadConfigsFromFile(const std::string &filename);
 
-	const std::string& Keydir() const noexcept { return cfg.cmn.dstdir; }
+	const std::string &Keydir() const noexcept { return cfg.cmn.dstdir; }
+	const std::string &ModemType() const noexcept { return cfg.cmn.modem_type; }
 
 private:
 	int exec(std::unique_ptr<daemon_c> daemon);

@@ -48,12 +48,27 @@ int main(int argc, char *argv[]) {
 			// installing the keys
 			typedef std::unique_ptr<Keygen_Basic> item_type;
 			std::vector<item_type> v;
-			v.emplace_back(std::make_unique<CIKey>());
-			v.emplace_back(std::make_unique<SAPKey>());
-			v.emplace_back(std::make_unique<SAPIntrKey>());
-			v.emplace_back(std::make_unique<DLinkCoderKey>());
-			v.emplace_back(std::make_unique<HopSeedKey>());
-			v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
+			if (daemonTool->ModemType().compare("rtk_u") == 0)
+			{
+				// РТК-У
+				v.emplace_back(std::make_unique<CIKey>());
+				v.emplace_back(std::make_unique<SAPKey>());
+				v.emplace_back(std::make_unique<SAPIntrKey>());
+				v.emplace_back(std::make_unique<DLinkCoderKey>());
+				v.emplace_back(std::make_unique<HopSeedKey>());
+				v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
+			} else if (daemonTool->ModemType().compare("rtk_v") == 0) {
+				// РТК-В
+				v.emplace_back(std::make_unique<CIKey>());
+				v.emplace_back(std::make_unique<SAPKey>());
+				v.emplace_back(std::make_unique<SAPIntrKey>());
+				v.emplace_back(std::make_unique<DLinkCommonKey>());
+				v.emplace_back(std::make_unique<PhyCommonKey>());
+			} else {
+				oss << "bad modem type (" << daemonTool->ModemType() << "). Exit";
+				TRACE(oss);
+				exit(-1);
+			}
 			for (std::vector<item_type>::iterator it = v.begin(); it != v.end(); it++)
 			{
 				(*it)->ReadFrom(daemonTool->Keydir() + "keys");
@@ -61,8 +76,6 @@ int main(int argc, char *argv[]) {
 				(*it)->WriteToHW();
 			}
 			v.clear();
-			// TODO: reset the modem
-
 			oss << "Done! Exit";
 			TRACE(oss);
 		}
