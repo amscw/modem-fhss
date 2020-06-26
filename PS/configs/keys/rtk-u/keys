@@ -1,0 +1,8 @@
+ci/key_lsb:7b
+ci/key_msb:1c8
+sap/key_sap:1
+sap/key_intr:01234567
+dlink/coder_key:1
+hop/seed:1
+dlink/data_preample_lsb:0
+dlink/data_preample_msb:0

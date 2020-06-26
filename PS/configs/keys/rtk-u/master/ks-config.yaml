@@ -1,0 +1,25 @@
+# Конфигурация демона key-sender
+
+# общие настройки
+common:
+    ifname: 'mfhss0'
+    ipaddr: '192.168.1.13' # кого пингует
+    login: 'root'
+    password: 'root'
+    srcfile: 'keys'  # файл с ключами
+    dstdir: '/mnt/configs/' # куда кидать по ssh
+    master: true
+    modem_type: 'rtk_u'
+    keygen_en: false
+
+#ping настройки
+ping:
+    ifname: 'br0' # с какого интерфейса пингует
+    timeout: 2	# сколько ждёт пинг [c]
+    count: 3	# сколько раз пингует  [шт]
+
+# ssh настройки
+sshpass:
+    timeout: 2	# время ожидания соединения [с]
+
+
