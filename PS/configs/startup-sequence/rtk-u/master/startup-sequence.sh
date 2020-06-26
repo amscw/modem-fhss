@@ -3,7 +3,6 @@
 if [ -d /sys/mfhss-dynamic ]; then
 	echo 1 >> /sys/mfhss-dynamic/m/rst
 	echo 1 >> /sys/mfhss-dynamic/afe/rst
-	#echo 1 >> /sys/mfhss-dynamic/m/master # 1 - master / 0 - slave
 	echo 1 >> /sys/mfhss-dynamic/m/mode # ("00" - Симплексный, "01" - Полудуплексный, "10" - Полнодуплексный)
 	echo 55 >> /sys/mfhss-dynamic/mlip/dflt_value 
 	# Настройка DLINK
@@ -98,13 +97,6 @@ if [ -d /sys/mfhss-dynamic ]; then
 	echo 0 >> 		/sys/mfhss-dynamic/att/fix_step_up
 	echo 0 >> 		/sys/mfhss-dynamic/att/fix_step_down
 	echo 0 >> 		/sys/mfhss-dynamic/att/fix_start
-	# Ключи
-	#echo 1 >> 			/sys/mfhss-dynamic/hop/seed
-	#echo 1 >> 			/sys/mfhss-dynamic/dlink/coder_seed
-	#echo 1 >> 			/sys/mfhss-dynamic/sap/key_sap
-	#echo 19088743 >> 	/sys/mfhss-dynamic/sap/key_intr
-	#echo 123 >> 		/sys/mfhss-dynamic/ci/key_lsb	
-	#echo 456 >> 		/sys/mfhss-dynamic/ci/key_msb
 	# Настройка CI
 	echo 10 >> 	/sys/mfhss-dynamic/ci/size_pr
 	echo 160 >> /sys/mfhss-dynamic/ci/size_pack
