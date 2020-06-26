@@ -8,6 +8,7 @@ AD9361_FIR_SRC="/mnt/configs/ad9361/ad9361_fir.conf"
 NET_CONF_SRC="/mnt/configs/system.conf"
 REGMAP_SRC="/mnt/configs/axi_pkg.vhd"
 KS_CONFIG_SRC="/mnt/configs/ks-config.yaml"
+KEYS_SRC="mnt/configs/keys"
 
 AD9361_CONF_DST="/etc/ad9361/config.yaml"
 AD9361_FIR_DST="/etc/ad9361/ad9361_fir.conf"
@@ -36,6 +37,10 @@ fi
 
 if [ -f $KS_CONFIG_SRC ]; then
 	cp -rf $KS_CONFIG_SRC $KS_CONFIG_DST;
+fi
+
+if [ -f $KEYS_SRC ]; then
+	chmod 666 $KEYS_SRC
 fi
 
 exit $?
