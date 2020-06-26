@@ -8,8 +8,9 @@ common:
     password: 'root'
     srcfile: 'keys'  # файл с ключами
     dstdir: '/mnt/configs/' # куда кидать по ssh
-    master: true
+    master: false
     modem_type: 'rtk_u'
+    keygen_en: true
 
 #ping настройки
 ping:

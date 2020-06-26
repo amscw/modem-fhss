@@ -37,56 +37,13 @@ int main(int argc, char *argv[]) {
 		{
 			daemonTool->Run();
 		} else {
-			oss << "daemon running. Load config...";
+			oss << "daemon running. Exit";
 			TRACE(oss);
-			
-			// load configuration (in parent)
-			daemonTool->LoadConfigsFromFile(std::string(const_cast<const char*>(argv[1])));
-			oss << "configuration successfully loaded from \"" << cfgFilename << "\". Setup keys...";
-			TRACE(oss);
-
-			// installing the keys
-			typedef std::unique_ptr<Keygen_Basic> item_type;
-			std::vector<item_type> v;
-			if (daemonTool->ModemType().compare("rtk_u") == 0)
-			{
-				// РТК-У
-				v.emplace_back(std::make_unique<CIKey>());
-				v.emplace_back(std::make_unique<SAPKey>());
-				v.emplace_back(std::make_unique<SAPIntrKey>());
-				v.emplace_back(std::make_unique<DLinkCoderKey>());
-				v.emplace_back(std::make_unique<HopSeedKey>());
-				v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
-			} else if (daemonTool->ModemType().compare("rtk_v") == 0) {
-				// РТК-В
-				v.emplace_back(std::make_unique<CIKey>());
-				v.emplace_back(std::make_unique<SAPKey>());
-				v.emplace_back(std::make_unique<SAPIntrKey>());
-				v.emplace_back(std::make_unique<DLinkCommonKey>());
-				v.emplace_back(std::make_unique<PhyCommonKey>());
-			} else {
-				oss << "bad modem type (" << daemonTool->ModemType() << "). Exit";
-				TRACE(oss);
-				exit(-1);
-			}
-			for (std::vector<item_type>::iterator it = v.begin(); it != v.end(); it++)
-			{
-				(*it)->ReadFrom(daemonTool->Keydir() + "keys");
-				(*it)->Print();
-				(*it)->WriteToHW();
-			}
-			v.clear();
-			oss << "Done! Exit";
-			TRACE(oss);
-		}
+		}		
 	} catch (exc_c &exc) {
 		// fail to run daemon
 		exc.ToStderr();
-	} catch (YAML::ParserException &exc) {
-		oss << "YAML::ParserException: " << exc.msg;
-		TRACE(oss);
-		exit(-1);
-	}		
+	} 		
 
 	return 0;
 }

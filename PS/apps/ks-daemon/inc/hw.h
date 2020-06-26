@@ -55,6 +55,7 @@ public:
 	bool IsOnline();
 	bool IsMaster();
 	void SetMaster(bool isMaster);
+	void Reset();
 };
 
 #endif // _HW

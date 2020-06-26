@@ -155,6 +155,8 @@ void SAPIntrKey::Generate() noexcept
 		std::swap(items[j], items[i]);
 	}
 
+	key = 0;
+
 	// записать перетасованные индексы в ключ
 	for (int i = 0; i < sizeof items; i++)
 		key |= (items[i] << (i*4));

@@ -90,3 +90,23 @@ void hw_c::SetMaster(bool isMaster)
 	}
 }
 
+void hw_c::Reset()
+{
+	std::ofstream ofs;
+
+	ofs.exceptions(std::ios_base::failbit);
+
+	try {
+		ofs.open("/sys/mfhss-dynamic/m/rst");
+	} catch (const std::ofstream::failure& e) {
+		THROW_EXC_MSG(hwExc_c, hwExc_c::errCode_t::ERROR_OPEN_REG, e.what());
+	}
+	if (ofs.is_open()) {
+		ofs << 1;
+		ofs.flush();
+		ofs << 0;
+		ofs.close();
+	} else {
+		THROW_EXC(hwExc_c, hwExc_c::errCode_t::ERROR_OPEN_REG);
+	}
+}

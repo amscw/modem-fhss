@@ -55,6 +55,8 @@ struct daemonToolExc_c : public exc_c
 
 class daemonTool_c
 {
+	typedef std::unique_ptr<Keygen_Basic> key_t;
+
 	// Logger
 	std::unique_ptr<logger_c>logger = nullptr;
 	
@@ -65,6 +67,19 @@ class daemonTool_c
 	
 	// Hardware abstraction layer
 	std::unique_ptr<hw_c> hw = nullptr;
+
+	// The keys
+	std::vector<key_t> v;
+
+	// State machine
+	enum class state_t : std::uint32_t {
+		MODEM_WAIT_CONNECT, 
+		MODEM_PING,
+		MODEM_CREATE_KEYS,
+		MODEM_SEND_KEYS,
+		MODEM_SAVE_KEYS,
+		MODEM_WAIT_DISCONNECT,
+	} state;
 
 	const std::string pidFilename{"pid"};
 	/* const */std::string cfgFilename{"ks-configs.yaml"};
@@ -84,6 +99,7 @@ class daemonTool_c
 			std::string dstdir;
 			bool isMaster;
 			std::string modem_type;
+			bool keygen_en;
 		} cmn;
 		struct {
 			std::string ifname;
@@ -108,6 +124,23 @@ public:
 private:
 	int exec(std::unique_ptr<daemon_c> daemon);
 	void savePIDToFile(const std::string &filename);
+	void saveKeysToFile(const std::string &filename);
+
+	void switchTo(state_t new_state) noexcept
+	{
+		static const char* ss[] = {
+			"MODEM_WAIT_CONNECT",
+			"MODEM_PING",
+			"MODEM_CREATE_KEYS",
+			"MODEM_SEND_KEYS",
+			"MODEM_SAVE_KEYS",
+			"MODEM_WAIT_DISCONNECT",
+		};
+		std::ostringstream oss;
+		state = new_state;
+		oss << "daemon switched to [" << ss[static_cast<int>(new_state)] << "]";
+		logger->Write(oss);
+	} 
 };
 
 #endif // _DAEMON_TOOL
