@@ -22,6 +22,51 @@ daemonTool_c::daemonTool_c(const std::string &filename) : state(state_t::MODEM_W
 		throw ;
 	}
 
+	// load configuration
+	try {
+		loadConfigsFromFile(cfgFilename);
+	} catch (YAML::ParserException &exc) {
+		logger->Write(exc.msg);
+		exit(-1);
+	}
+	oss << "configuration successfully loaded from \"" << cfgFilename << "\"";
+	logger->Write(oss);
+
+	// create hw level
+	try {
+		hw = std::make_unique<hw_c>(this->cfg.cmn.ifname);
+		hw->SetMaster(cfg.cmn.isMaster);
+	} catch (exc_c &exc) {
+		logger->Write(exc.ToString());
+		exit(-1);
+	}
+	oss << "hardware abstraction level initialized (master: " << std::boolalpha << cfg.cmn.isMaster << ")";
+	logger->Write(oss);
+
+	// create the keys
+	if (cfg.cmn.modem_type.compare("rtk_u") == 0)
+	{
+		// РТК-У
+		v.emplace_back(std::make_unique<CIKey>());
+		v.emplace_back(std::make_unique<SAPKey>());
+		v.emplace_back(std::make_unique<SAPIntrKey>());
+		v.emplace_back(std::make_unique<DLinkCoderKey>());
+		v.emplace_back(std::make_unique<HopSeedKey>());
+		v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
+	} else if (cfg.cmn.modem_type.compare("rtk_v") == 0) {
+		// РТК-В
+		v.emplace_back(std::make_unique<CIKey>());
+		v.emplace_back(std::make_unique<SAPKey>());
+		v.emplace_back(std::make_unique<SAPIntrKey>());
+		v.emplace_back(std::make_unique<DLinkCommonKey>());
+		v.emplace_back(std::make_unique<PhyCommonKey>());
+	} else {
+		oss << "bad modem type (" << cfg.cmn.modem_type << "). Exit";
+		logger->Write(oss);
+		exit(-1);
+	}
+
+
 	pid = fork();
 	switch (pid)
 	{
@@ -94,7 +139,7 @@ void daemonTool_c::savePIDToFile(const std::string &filename)
 	ofs.close();
 }
 
-void daemonTool_c::LoadConfigsFromFile(const std::string &filename)
+void daemonTool_c::loadConfigsFromFile(const std::string &filename)
 {
 	try
 	{
@@ -143,6 +188,22 @@ void daemonTool_c::saveKeysToFile(const std::string &filename)
 }
 
 
+void daemonTool_c::InstallKeys()
+{
+	// installing the keys 
+	for (std::vector<key_t>::iterator it = v.begin(); it != v.end(); it++)
+	{
+		try {
+			(*it)->ReadFrom(cfg.cmn.dstdir + cfg.cmn.srcfile);
+			(*it)->WriteToHW();
+			(*it)->Print();
+		} catch (exc_c &exc) {
+			throw;
+		}
+	}
+}
+
+
 /**
  * Создаёт демона, и процесс ответвляется в дочерний в конструкторе демона.
  *
@@ -185,58 +246,6 @@ int daemonTool_c::Run()
 	}
 	oss << "pid saved to file \"" << pidFilename << "\"";
 	logger->Write(oss);
-
-	// load configuration
-	try {
-		LoadConfigsFromFile(cfgFilename);
-	} catch (YAML::ParserException &exc) {
-		logger->Write(exc.msg);
-		exit(-1);
-	}
-	oss << "configuration successfully loaded from \"" << cfgFilename << "\"";
-	logger->Write(oss);
-
-	// create hw level
-	try {
-		hw = std::make_unique<hw_c>(this->cfg.cmn.ifname);
-		hw->SetMaster(cfg.cmn.isMaster);
-	} catch (exc_c &exc) {
-		logger->Write(exc.ToString());
-		exit(-1);
-	}
-	oss << "hardware abstraction level initialized";
-	logger->Write(oss);
-
-	// create the keys
-	if (cfg.cmn.modem_type.compare("rtk_u") == 0)
-	{
-		// РТК-У
-		v.emplace_back(std::make_unique<CIKey>());
-		v.emplace_back(std::make_unique<SAPKey>());
-		v.emplace_back(std::make_unique<SAPIntrKey>());
-		v.emplace_back(std::make_unique<DLinkCoderKey>());
-		v.emplace_back(std::make_unique<HopSeedKey>());
-		v.emplace_back(std::make_unique<DLinkDataPreampbleKey>());
-	} else if (cfg.cmn.modem_type.compare("rtk_v") == 0) {
-		// РТК-В
-		v.emplace_back(std::make_unique<CIKey>());
-		v.emplace_back(std::make_unique<SAPKey>());
-		v.emplace_back(std::make_unique<SAPIntrKey>());
-		v.emplace_back(std::make_unique<DLinkCommonKey>());
-		v.emplace_back(std::make_unique<PhyCommonKey>());
-	} else {
-		oss << "bad modem type (" << cfg.cmn.modem_type << "). Exit";
-		logger->Write(oss);
-		exit(-1);
-	}
-
-	// installing the keys 
-	for (std::vector<key_t>::iterator it = v.begin(); it != v.end(); it++)
-	{
-		(*it)->ReadFrom(cfg.cmn.dstdir + cfg.cmn.srcfile);
-		(*it)->WriteToHW();
-		// (*it)->Print();
-	}
 
 	if (!cfg.cmn.keygen_en)
 	{

@@ -116,15 +116,13 @@ public:
 	daemonTool_c(const std::string &filename);
 	inline bool IsChild() const noexcept {return (pid == 0); }
 	int Run();
-	void LoadConfigsFromFile(const std::string &filename);
-
-	const std::string &Keydir() const noexcept { return cfg.cmn.dstdir; }
-	const std::string &ModemType() const noexcept { return cfg.cmn.modem_type; }
+	void InstallKeys();
 
 private:
 	int exec(std::unique_ptr<daemon_c> daemon);
 	void savePIDToFile(const std::string &filename);
 	void saveKeysToFile(const std::string &filename);
+	void loadConfigsFromFile(const std::string &filename);
 
 	void switchTo(state_t new_state) noexcept
 	{
